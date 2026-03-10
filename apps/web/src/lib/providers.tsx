@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from './auth-context'
+import { PostHogProvider } from '@/components/posthog-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,12 +22,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>{children}</AuthProvider>
-      </TooltipProvider>
-      <Toaster position="top-right" richColors closeButton />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <PostHogProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </TooltipProvider>
+        <Toaster position="top-right" richColors closeButton />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </PostHogProvider>
   )
 }

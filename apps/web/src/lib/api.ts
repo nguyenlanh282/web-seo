@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { track } from './analytics'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
@@ -154,34 +155,67 @@ export const articlesApi = {
     api.get('/articles', { params: projectId ? { projectId } : {} }).then(extractData),
   get: (id: string) => api.get(`/articles/${id}`).then(extractData),
   create: (data: { title: string; targetKeyword: string; projectId?: string }) =>
-    api.post('/articles', data).then(extractData),
+    api.post('/articles', data).then(extractData).then((res: any) => {
+      track('article_created', { keyword: data.targetKeyword, projectId: data.projectId })
+      return res
+    }),
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/articles/${id}`, data).then(extractData),
   delete: (id: string) => api.delete(`/articles/${id}`).then(extractData),
 
   // Step 1: Keyword Analysis
   step1: (articleId: string, data: { keyword: string; language?: string; country?: string }) =>
-    api.post(`/articles/${articleId}/step1/analyze`, data).then(extractData),
+    api.post(`/articles/${articleId}/step1/analyze`, data).then(extractData).then((res: any) => {
+      track('step_completed', { step: 1, articleId, keyword: data.keyword })
+      return res
+    }),
 
   // Step 2: Generate Outline
   step2: (articleId: string, data?: { targetLength?: number }) =>
-    api.post(`/articles/${articleId}/step2`, data || {}).then(extractData),
+    api.post(`/articles/${articleId}/step2`, data || {}).then(extractData).then((res: any) => {
+      track('step_completed', { step: 2, articleId })
+      return res
+    }),
 
   // Step 3: Write Content
   step3: (articleId: string, data?: { sections?: string[] }) =>
-    api.post(`/articles/${articleId}/step3`, data || {}).then(extractData),
+    api.post(`/articles/${articleId}/step3`, data || {}).then(extractData).then((res: any) => {
+      track('step_completed', { step: 3, articleId })
+      return res
+    }),
 
   // Step 4: SEO Check
   step4: (articleId: string) =>
-    api.post(`/articles/${articleId}/step4`).then(extractData),
+    api.post(`/articles/${articleId}/step4`).then(extractData).then((res: any) => {
+      track('step_completed', { step: 4, articleId })
+      return res
+    }),
 
   // Step 5: Export HTML
   step5Export: (articleId: string) =>
-    api.post(`/articles/${articleId}/step5/export`).then(extractData),
+    api.post(`/articles/${articleId}/step5/export`).then(extractData).then((res: any) => {
+      track('export_html', { articleId, wordCount: res?.wordCount, seoScore: res?.seoScore })
+      track('step_completed', { step: 5, articleId })
+      return res
+    }),
+
+  // Step 5b: Async WordPress Publish
+  publishWp: (articleId: string, wpSiteId: string) =>
+    api.post(`/articles/${articleId}/publish-wp`, { wpSiteId }).then(extractData).then((res: any) => {
+      track('article_published', { articleId, wpSiteId })
+      return res
+    }),
+
+  // Internal Link Suggestions
+  internalLinks: (articleId: string) =>
+    api.get(`/articles/${articleId}/internal-links`).then(extractData),
 
   // AI Editor Action (sync)
   aiAction: (articleId: string, data: { action: string; selectedText: string; context?: string }) =>
-    api.post(`/articles/${articleId}/ai-action`, data).then(extractData),
+    api.post(`/articles/${articleId}/ai-action`, data).then(extractData).then((res: any) => {
+      track('ai_action', { action: data.action, articleId })
+      return res
+    }),
 
   // Status transition
   updateStatus: (id: string, status: string) =>
@@ -210,7 +244,11 @@ export const usersApi = {
 export const wordpressApi = {
   listSites: () => api.get('/wordpress/sites').then(extractData),
   addSite: (data: { name: string; siteUrl: string; username: string; applicationPassword: string }) =>
-    api.post('/wordpress/sites', data).then(extractData),
+    api.post('/wordpress/sites', data).then(extractData).then((res: any) => {
+      // userId is available in PostHog session via identifyUser — no need to pass here
+      track('wp_site_added', { userId: res?.userId ?? '' })
+      return res
+    }),
   removeSite: (id: string) => api.delete(`/wordpress/sites/${id}`).then(extractData),
   publish: (articleId: string, wpSiteId: string) =>
     api.post(`/wordpress/publish/${articleId}`, { wpSiteId }).then(extractData),

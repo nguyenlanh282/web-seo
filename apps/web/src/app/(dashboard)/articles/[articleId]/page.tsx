@@ -8,6 +8,8 @@ import dynamic from 'next/dynamic';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import type { ArticleEditorRef } from '@/components/editor/article-editor';
+import ExportTab from '@/components/editor/ExportTab';
+import InternalLinksPanel from '@/components/editor/InternalLinksPanel';
 
 // Lazy load TipTap editor (heavy component, SSR not needed)
 const ArticleEditor = dynamic(() => import('@/components/editor/article-editor'), {
@@ -1354,9 +1356,29 @@ export default function ArticleEditorPage() {
     const hasContent = !!article.content || !!article.htmlContent;
     const hasOutline = article.outline && article.outline.length > 0;
     const hasAnalysis = !!article.keywordAnalysis;
+    const showInternalLinks = hasContent && ['SEO_CHECKED', 'EXPORTED', 'PUBLISHED'].includes(article.status);
 
     if (hasContent) {
-      return <ArticleContentView article={article} articleId={articleId} editorRef={editorRef} />;
+      return (
+        <div className="space-y-8">
+          <ArticleContentView article={article} articleId={articleId} editorRef={editorRef} />
+          {showInternalLinks && (
+            <div>
+              <h3 className="text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#8B5CF6]" />
+                Gợi ý Internal Links
+              </h3>
+              <InternalLinksPanel
+                articleId={articleId}
+                onInsert={(anchorText, path) => {
+                  navigator.clipboard.writeText(`<a href="${path}">${anchorText}</a>`)
+                  toast.success('Đã copy HTML link vào clipboard')
+                }}
+              />
+            </div>
+          )}
+        </div>
+      );
     }
 
     if (hasOutline && article.outline) {
@@ -1416,10 +1438,12 @@ export default function ArticleEditorPage() {
       case 5:
       case 6:
         return (
-          <ExportPanel
-            article={article}
+          <ExportTab
             articleId={articleId}
-            onComplete={handleStepComplete}
+            articleTitle={article.title}
+            seoScore={article.seoScore}
+            status={article.status}
+            exportedHtml={article.exportedHtml}
           />
         );
       default:

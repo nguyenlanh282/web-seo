@@ -33,8 +33,8 @@ content studios, and freelance bloggers.
 | 2 | AI Engine — BullMQ, SSE, SerpAPI, Step 1 Keyword Analysis | 3-4 | ✅ Done | [phase-02-ai-engine-step1.md](./phase-02-ai-engine-step1.md) |
 | 3 | Editor — TipTap, Outline + Content Writer (Steps 2 & 3) | 5-6 | ✅ Done | [phase-03-editor-steps-2-3.md](./phase-03-editor-steps-2-3.md) |
 | 4 | SEO Checker — 12-Item Checklist + Readability (Step 4) | 7 | ✅ Done | [phase-04-seo-checker.md](./phase-04-seo-checker.md) |
-| 5 | Export & WordPress — HTML Export + 1-Click Publish (Step 5) | 8-9 | 🔄 In Progress (~80%) | [phase-05-export-wordpress.md](./phase-05-export-wordpress.md) |
-| 6 | Hardening — Publish Pipeline, Plan Enforcement, Rate Limiting | 10 | ⏳ Pending | [phase-06-publish-enforcement.md](./phase-06-publish-enforcement.md) |
+| 5 | Export & WordPress — HTML Export + 1-Click Publish (Step 5) | 8-9 | 🔄 In Progress (~90%) | [phase-05-export-wordpress.md](./phase-05-export-wordpress.md) |
+| 6 | Hardening — Publish Pipeline, Plan Enforcement, Rate Limiting | 10 | 🔄 In Progress (~70%) | [phase-06-publish-enforcement.md](./phase-06-publish-enforcement.md) |
 
 ## Article State Machine
 
@@ -72,5 +72,5 @@ Week 10   ███     Phase 6 — Hardening & Launch
 
 ## Reference Documents
 
-- PRD v4: `./seo-aeo-prd_4.md` (move to `docs/` recommended)
+- PRD v4: `./seo-aeo-prd_4.md`
 - Tech Stack: `./docs/tech-stack.md`

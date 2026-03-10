@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { authApi } from './api'
+import { identifyUser, resetAnalytics } from './analytics'
 
 interface User {
   id: string
@@ -39,7 +40,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const data = await authApi.me()
-      setUser(data?.user || data)
+      const u = data?.user || data
+      setUser(u)
+      if (u?.id) {
+        identifyUser(u.id, { email: u.email, plan: u.plan, name: u.name })
+      }
     } catch {
       setUser(null)
       localStorage.removeItem('access_token')
@@ -64,6 +69,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTokenCookie(token)
     }
     setUser(data?.user)
+    if (data?.user) {
+      identifyUser(data.user.id, { email: data.user.email, plan: data.user.plan, name: data.user.name })
+    }
   }
 
   const register = async (email: string, password: string, name?: string) => {
@@ -76,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore logout errors
     }
+    resetAnalytics()
     localStorage.removeItem('access_token')
     removeTokenCookie()
     setUser(null)

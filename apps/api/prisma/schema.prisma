@@ -135,6 +135,7 @@ model Article {
   images          ArticleImage[]
   sourceLinks     InternalLink[]   @relation("SourceArticle")
   targetLinks     InternalLink[]   @relation("TargetArticle")
+  exportHistories ExportHistory[]
 
   @@index([userId])
   @@index([projectId])
@@ -274,4 +275,32 @@ model InternalLink {
 
   @@index([sourceArticleId])
   @@index([targetArticleId])
+}
+
+enum ExportType {
+  HTML
+  WORDPRESS
+}
+
+enum ExportStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  PARTIAL  // WP post created but DB sync failed — post exists on WP, retry needed
+}
+
+model ExportHistory {
+  id          String       @id @default(cuid())
+  articleId   String
+  type        ExportType
+  status      ExportStatus
+  wpPostId    String?
+  wpPostUrl   String?
+  errorMsg    String?
+  createdAt   DateTime     @default(now())
+
+  article     Article      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([createdAt])
 }

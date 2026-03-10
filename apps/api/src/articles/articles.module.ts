@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ArticlesService } from './articles.service'
 import { ArticlesController } from './articles.controller'
+import { InternalLinkService } from './internal-link.service'
 import { JobsModule } from '../jobs/jobs.module'
 import { RedisModule } from '../redis/redis.module'
 import { AiModule } from '../ai/ai.module'
@@ -11,7 +12,7 @@ import { PlanGuard } from '../common/guards/plan.guard'
 
 @Module({
   imports: [JobsModule, RedisModule, AiModule, SeoModule, UsersModule],
-  providers: [ArticlesService, RateLimitGuard, PlanGuard],
+  providers: [ArticlesService, InternalLinkService, RateLimitGuard, PlanGuard],
   controllers: [ArticlesController],
   exports: [ArticlesService],
 })

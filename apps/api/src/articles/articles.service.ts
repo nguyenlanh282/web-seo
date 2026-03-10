@@ -1,12 +1,18 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common'
 import { InjectQueue } from '@nestjs/bull'
 import { Queue } from 'bull'
 import { PrismaService } from '../prisma/prisma.service'
 import { RedisService } from '../redis/redis.service'
 import { AnthropicService } from '../ai/anthropic.service'
 import { SeoService } from '../seo/seo.service'
-import { ArticleStatus } from '@prisma/client'
-import { QUEUE_NAMES, AI_MODELS } from '@seopen/shared'
+import { ArticleStatus, ExportType, ExportStatus } from '@prisma/client'
+import { QUEUE_NAMES, AI_MODELS, REDIS_KEYS } from '@seopen/shared'
 import { assertTransition } from './state-machine'
 import { CreateArticleDto } from './dto/create-article.dto'
 import { UpdateArticleDto } from './dto/update-article.dto'
@@ -22,6 +28,7 @@ export class ArticlesService {
     private seoService: SeoService,
     @InjectQueue(QUEUE_NAMES.OUTLINE_GENERATION) private outlineQueue: Queue,
     @InjectQueue(QUEUE_NAMES.CONTENT_WRITING) private contentQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.WORDPRESS_PUBLISH) private wpPublishQueue: Queue,
   ) {}
 
   async findAll(userId: string, projectId?: string) {
@@ -79,8 +86,9 @@ export class ArticlesService {
       throw new BadRequestException('Cannot update status directly. Use /articles/:id/status endpoint.')
     }
     await this.findOne(id, userId)
+    // Include userId in where to prevent TOCTOU race condition
     return this.prisma.article.update({
-      where: { id },
+      where: { id, userId },
       data: dto,
     })
   }
@@ -94,16 +102,19 @@ export class ArticlesService {
       throw new BadRequestException(e.message)
     }
 
+    // Include userId in where to prevent TOCTOU race condition
     return this.prisma.article.update({
-      where: { id },
+      where: { id, userId },
       data: { status },
     })
   }
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId)
-    return this.prisma.article.delete({ where: { id } })
+    // Include userId in where to prevent TOCTOU race condition
+    return this.prisma.article.delete({ where: { id, userId } })
   }
+
 
   // ========== Step 2: Outline Generation ==========
 
@@ -247,11 +258,16 @@ export class ArticlesService {
     // Build full HTML document
     const html = this.buildExportHtml(article)
 
-    // Transition to EXPORTED
-    await this.prisma.article.update({
-      where: { id: articleId },
-      data: { status: ArticleStatus.EXPORTED },
-    })
+    // Transition to EXPORTED + log ExportHistory
+    await this.prisma.$transaction([
+      this.prisma.article.update({
+        where: { id: articleId },
+        data: { status: ArticleStatus.EXPORTED },
+      }),
+      this.prisma.exportHistory.create({
+        data: { articleId, type: ExportType.HTML, status: ExportStatus.SUCCESS },
+      }),
+    ])
 
     return {
       html,
@@ -262,26 +278,95 @@ export class ArticlesService {
     }
   }
 
-  // ========== Retry Publish ==========
+  // ========== Step 5b: Async WordPress Publish ==========
 
-  async retryPublish(articleId: string, userId: string) {
+  async publishToWordPress(articleId: string, userId: string, wpSiteId: string) {
     const article = await this.findOne(articleId, userId)
 
-    if (article.status !== ArticleStatus.EXPORTED && article.status !== ArticleStatus.SEO_CHECKED) {
-      throw new BadRequestException('Article must be in EXPORTED or SEO_CHECKED state to retry publish')
+    if (
+      article.status !== ArticleStatus.EXPORTED &&
+      article.status !== ArticleStatus.SEO_CHECKED
+    ) {
+      throw new BadRequestException(
+        'Article must be in EXPORTED or SEO_CHECKED state to publish to WordPress',
+      )
     }
 
-    // Re-export HTML and return it ready for WP publish
-    const html = this.buildExportHtml(article)
-
-    return {
-      html,
-      title: article.title,
-      metaDescription: article.metaDescription,
-      wordCount: article.wordCount,
-      seoScore: article.seoScore,
-      retried: true,
+    // Guard against double-enqueue (lock exists = already publishing)
+    const lockKey = REDIS_KEYS.PUBLISH_LOCK(articleId)
+    const locked = await this.redis.get(lockKey)
+    if (locked) {
+      throw new ConflictException('A WordPress publish job is already in progress for this article')
     }
+
+    const job = await this.wpPublishQueue.add(
+      'publish',
+      { articleId, userId, wpSiteId },
+      {
+        attempts: 2,
+        backoff: { type: 'fixed', delay: 5000 },
+        removeOnComplete: 50,
+        removeOnFail: 100,
+        timeout: 120000, // 2 min hard timeout
+      },
+    )
+
+    return { jobId: job.id!.toString() }
+  }
+
+  // ========== Retry Publish ==========
+
+  async retryPublish(articleId: string, userId: string, wpSiteId?: string) {
+    const article = await this.findOne(articleId, userId)
+
+    // Allow retry from EXPORTED, SEO_CHECKED, or PUBLISHED (PARTIAL DB-sync failure)
+    const allowed: ArticleStatus[] = [
+      ArticleStatus.EXPORTED,
+      ArticleStatus.SEO_CHECKED,
+      ArticleStatus.PUBLISHED,
+    ]
+    if (!allowed.includes(article.status as ArticleStatus)) {
+      throw new BadRequestException(
+        'Article must be in EXPORTED, SEO_CHECKED, or PUBLISHED (partial) state to retry publish',
+      )
+    }
+
+    // Guard against re-publishing an article that already has a live WP post
+    // (only allow retry when article is PUBLISHED but DB sync is known partial)
+    if (article.status === ArticleStatus.PUBLISHED && (article as any).wpPostId) {
+      throw new ConflictException(
+        `Article already published as WP post #${(article as any).wpPostId}. Delete that post first or create a new article.`,
+      )
+    }
+
+    // Resolve site: explicit > last used > error
+    const resolvedSiteId = wpSiteId || (article as any).wpSiteId
+    if (!resolvedSiteId) {
+      throw new BadRequestException(
+        'No WordPress site specified and no previous site on record. Provide wpSiteId.',
+      )
+    }
+
+    // Guard against duplicate in-flight job
+    const lockKey = REDIS_KEYS.PUBLISH_LOCK(articleId)
+    const locked = await this.redis.get(lockKey)
+    if (locked) {
+      throw new ConflictException('A WordPress publish job is already in progress for this article')
+    }
+
+    const job = await this.wpPublishQueue.add(
+      'publish',
+      { articleId, userId, wpSiteId: resolvedSiteId },
+      {
+        attempts: 2,
+        backoff: { type: 'fixed', delay: 5000 },
+        removeOnComplete: 50,
+        removeOnFail: 100,
+        timeout: 120000,
+      },
+    )
+
+    return { jobId: job.id!.toString(), retried: true }
   }
 
   /** Escape plain text for safe injection into HTML text nodes */
