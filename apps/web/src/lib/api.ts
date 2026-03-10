@@ -9,14 +9,8 @@ const api = axios.create({
   withCredentials: true, // for refresh token cookie
 })
 
-// Request interceptor - add access token
+// Request interceptor — access_token is sent automatically via HttpOnly cookie (withCredentials: true)
 api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-  }
   return config
 })
 
@@ -24,12 +18,12 @@ api.interceptors.request.use((config) => {
 let isRefreshing = false
 let failedQueue: Array<{ resolve: (value: unknown) => void; reject: (reason?: unknown) => void }> = []
 
-const processQueue = (error: unknown, token: string | null = null) => {
+const processQueue = (error: unknown) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error)
     } else {
-      prom.resolve(token)
+      prom.resolve(null)
     }
   })
   failedQueue = []
@@ -44,8 +38,7 @@ api.interceptors.response.use(
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`
+        }).then(() => {
           return api(originalRequest)
         })
       }
@@ -54,18 +47,13 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const response = await axios.post(`${API_BASE}/api/v1/auth/refresh`, {}, { withCredentials: true })
-        const accessToken = response.data?.data?.accessToken || response.data?.accessToken
-        if (accessToken) {
-          localStorage.setItem('access_token', accessToken)
-          processQueue(null, accessToken)
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`
-          return api(originalRequest)
-        }
-        throw new Error('No access token in refresh response')
+        // Refresh token is in HttpOnly cookie — sent automatically
+        await axios.post(`${API_BASE}/api/v1/auth/refresh`, {}, { withCredentials: true })
+        // New access_token is set as HttpOnly cookie by the server
+        processQueue(null)
+        return api(originalRequest)
       } catch (refreshError) {
-        processQueue(refreshError, null)
-        localStorage.removeItem('access_token')
+        processQueue(refreshError)
         if (typeof window !== 'undefined') {
           window.location.href = '/login'
         }
@@ -276,10 +264,10 @@ export const jobsApi = {
   getStatus: (queue: string, jobId: string) =>
     api.get(`/jobs/${queue}/${jobId}`).then(extractData),
 
-  // SSE stream for article progress
-  createEventSource: (articleId: string): EventSource => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
-    return new EventSource(`${API_BASE}/api/v1/jobs/stream/${articleId}?token=${token}`)
+  // SSE stream for article progress — uses a short-lived ticket instead of token in URL
+  createEventSource: async (articleId: string): Promise<EventSource> => {
+    const { ticket } = await api.post('/jobs/sse-ticket').then(r => r.data?.data ?? r.data)
+    return new EventSource(`${API_BASE}/api/v1/jobs/stream/${articleId}?ticket=${ticket}`)
   },
 }
 

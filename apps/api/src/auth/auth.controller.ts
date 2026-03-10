@@ -38,6 +38,7 @@ export class AuthController {
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.register(dto)
     this.setRefreshTokenCookie(res, result.refreshToken)
+    this.setAccessTokenCookie(res, result.accessToken)
     const { refreshToken: _, ...response } = result
     return response
   }
@@ -49,6 +50,7 @@ export class AuthController {
   async login(@Request() req: any, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(req.user.id, req.user.email)
     this.setRefreshTokenCookie(res, result.refreshToken)
+    this.setAccessTokenCookie(res, result.accessToken)
     const { refreshToken: _, ...response } = result
     return response
   }
@@ -134,6 +136,7 @@ export class AuthController {
   async logout(@GetUser('id') userId: string, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(userId)
     res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'lax', secure: false })
+    res.clearCookie('access_token', { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production' })
     return { message: 'Logged out successfully' }
   }
 
@@ -148,6 +151,15 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
       path: '/',
+    })
+  }
+
+  private setAccessTokenCookie(res: Response, token: string) {
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
     })
   }
 }

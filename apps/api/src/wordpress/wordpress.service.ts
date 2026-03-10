@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
 import axios from 'axios'
 import { PrismaService } from '../prisma/prisma.service'
 import { encrypt, decrypt } from '../common/utils/crypto'
@@ -12,6 +12,42 @@ export class WordpressService {
   constructor(
     private prisma: PrismaService,
   ) {}
+
+  /**
+   * Validates that a WordPress URL is safe to contact (SSRF protection).
+   * Throws BadRequestException for invalid, non-http(s), or private/internal URLs.
+   */
+  private validateWpUrl(url: string): void {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      throw new BadRequestException('Invalid WordPress URL')
+    }
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new BadRequestException('WordPress URL must use http or https protocol')
+    }
+
+    const hostname = parsed.hostname
+
+    const blockedPatterns = [
+      /^127\./,
+      /^localhost$/i,
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[01])\./,
+      /^192\.168\./,
+      /^169\.254\./,
+      /^0\./,
+      /^::1$/,
+    ]
+
+    for (const pattern of blockedPatterns) {
+      if (pattern.test(hostname)) {
+        throw new BadRequestException('WordPress URL must not point to a private or internal address')
+      }
+    }
+  }
 
   /**
    * Encrypts a password using AES-256-GCM (authenticated encryption).
@@ -48,6 +84,8 @@ export class WordpressService {
   }
 
   async addSite(userId: string, dto: CreateWpSiteDto) {
+    this.validateWpUrl(dto.url)
+
     const passwordEnc = this.encryptPassword(dto.password)
 
     // Test connection first

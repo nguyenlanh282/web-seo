@@ -386,24 +386,28 @@ function KeywordPanel({
   useEffect(() => {
     if (!mutation.isPending) return;
 
-    const es = jobsApi.createEventSource(articleId);
-    eventSourceRef.current = es;
+    let cancelled = false;
+    jobsApi.createEventSource(articleId).then((es) => {
+      if (cancelled) { es.close(); return; }
+      eventSourceRef.current = es;
 
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.progress) {
-          setProgress(Math.min(data.progress, 95));
-        }
-      } catch {}
-    };
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.progress) {
+            setProgress(Math.min(data.progress, 95));
+          }
+        } catch {}
+      };
 
-    es.onerror = () => {
-      es.close();
-    };
+      es.onerror = () => {
+        es.close();
+      };
+    });
 
     return () => {
-      es.close();
+      cancelled = true;
+      eventSourceRef.current?.close();
     };
   }, [mutation.isPending, articleId]);
 
@@ -682,19 +686,24 @@ function ContentPanel({
   useEffect(() => {
     if (!mutation.isPending) return;
 
-    const es = jobsApi.createEventSource(articleId);
+    let cancelled = false;
+    jobsApi.createEventSource(articleId).then((es) => {
+      if (cancelled) { es.close(); return; }
 
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.progress) setProgress(Math.min(data.progress, 95));
-        if (data.message) setStatusMsg(data.message);
-      } catch {}
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.progress) setProgress(Math.min(data.progress, 95));
+          if (data.message) setStatusMsg(data.message);
+        } catch {}
+      };
+
+      es.onerror = () => es.close();
+    });
+
+    return () => {
+      cancelled = true;
     };
-
-    es.onerror = () => es.close();
-
-    return () => es.close();
   }, [mutation.isPending, articleId]);
 
   const hasContent = !!article.content;

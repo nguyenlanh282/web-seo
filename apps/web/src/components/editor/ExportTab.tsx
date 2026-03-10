@@ -110,7 +110,7 @@ export default function ExportTab({
     mutationFn: () => articlesApi.publishWp(articleId, selectedSiteId),
     onSuccess: () => {
       setPublish({ phase: 'publishing', progress: 5, message: 'Đang khởi động...' })
-      startSseListener()
+      void startSseListener()
     },
     onError: (err: any) => {
       const msg =
@@ -126,7 +126,7 @@ export default function ExportTab({
     mutationFn: () => articlesApi.retryPublish(articleId, selectedSiteId || undefined),
     onSuccess: () => {
       setPublish({ phase: 'publishing', progress: 5, message: 'Đang thử lại...' })
-      startSseListener()
+      void startSseListener()
     },
     onError: (err: any) => {
       const msg =
@@ -138,9 +138,9 @@ export default function ExportTab({
     },
   })
 
-  const startSseListener = () => {
+  const startSseListener = async () => {
     eventSourceRef.current?.close()
-    const es = jobsApi.createEventSource(articleId)
+    const es = await jobsApi.createEventSource(articleId)
     eventSourceRef.current = es
 
     es.onmessage = (event) => {

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Sse, MessageEvent, UseGuards } from '@nestjs/common'
+import { Controller, Get, Param, Post, Query, Sse, MessageEvent, UseGuards } from '@nestjs/common'
 import { Observable } from 'rxjs'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
@@ -8,8 +8,6 @@ import { SseService } from './sse.service'
 
 @ApiTags('jobs')
 @Controller('jobs')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class JobsController {
   constructor(
     private readonly jobsService: JobsService,
@@ -17,6 +15,8 @@ export class JobsController {
   ) {}
 
   @Get(':queue/:jobId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getJobStatus(
     @Param('queue') queue: string,
     @Param('jobId') jobId: string,
@@ -25,11 +25,21 @@ export class JobsController {
     return { success: true, data }
   }
 
+  @Post('sse-ticket')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  async issueTicket(@CurrentUser() user: { id: string }) {
+    const ticket = await this.sseService.createTicket(user.id)
+    return { ticket }
+  }
+
+  // Authentication via one-time ticket query param — no JwtAuthGuard here
   @Sse('stream/:articleId')
-  streamJobProgress(
-    @CurrentUser() user: { id: string },
+  async streamJobProgress(
+    @Query('ticket') ticket: string,
     @Param('articleId') articleId: string,
-  ): Observable<MessageEvent> {
-    return this.sseService.getStream(articleId, user.id)
+  ): Promise<Observable<MessageEvent>> {
+    const userId = await this.sseService.validateTicket(ticket)
+    return this.sseService.getStream(articleId, userId)
   }
 }

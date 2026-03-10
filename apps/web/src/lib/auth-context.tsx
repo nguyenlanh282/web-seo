@@ -25,14 +25,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-function setTokenCookie(token: string) {
-  document.cookie = `access_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
-}
-
-function removeTokenCookie() {
-  document.cookie = 'access_token=; path=/; max-age=0'
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -47,27 +39,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       setUser(null)
-      localStorage.removeItem('access_token')
-      removeTokenCookie()
     }
   }, [])
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      refresh().finally(() => setIsLoading(false))
-    } else {
-      setIsLoading(false)
-    }
+    // Token lives in HttpOnly cookie — just attempt to fetch the current user
+    refresh().finally(() => setIsLoading(false))
   }, [refresh])
 
   const login = async (email: string, password: string) => {
     const data = await authApi.login({ email, password })
-    const token = data?.accessToken || data?.access_token
-    if (token) {
-      localStorage.setItem('access_token', token)
-      setTokenCookie(token)
-    }
+    // access_token is now set as an HttpOnly cookie by the server
     setUser(data?.user)
     if (data?.user) {
       identifyUser(data.user.id, { email: data.user.email, plan: data.user.plan, name: data.user.name })
@@ -85,8 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // ignore logout errors
     }
     resetAnalytics()
-    localStorage.removeItem('access_token')
-    removeTokenCookie()
     setUser(null)
     window.location.href = '/login'
   }

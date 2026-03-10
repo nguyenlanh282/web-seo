@@ -1,7 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, UnauthorizedException } from '@nestjs/common'
 import { Subject, Observable } from 'rxjs'
 import { MessageEvent } from '@nestjs/common'
 import { SSEEvent } from '@seopen/shared'
+import { randomUUID } from 'crypto'
+import { RedisService } from '../redis/redis.service'
 
 // Streams older than 10 minutes with no terminal event are considered stale
 const STREAM_TTL_MS = 10 * 60 * 1000
@@ -13,6 +15,8 @@ export class SseService implements OnModuleInit, OnModuleDestroy {
   private readonly streams = new Map<string, Subject<SSEEvent>>()
   private readonly streamCreatedAt = new Map<string, number>()
   private cleanupTimer: ReturnType<typeof setInterval>
+
+  constructor(private readonly redis: RedisService) {}
 
   onModuleInit() {
     this.cleanupTimer = setInterval(() => this.cleanupStaleStreams(), CLEANUP_INTERVAL_MS)
@@ -41,6 +45,29 @@ export class SseService implements OnModuleInit, OnModuleDestroy {
         }
       }
     }
+  }
+
+  /**
+   * Issues a one-time SSE ticket stored in Redis with a 30-second TTL.
+   */
+  async createTicket(userId: string): Promise<string> {
+    const ticket = randomUUID()
+    await this.redis.set(`sse:ticket:${ticket}`, userId, 'EX', 30)
+    return ticket
+  }
+
+  /**
+   * Validates a one-time SSE ticket. Deletes it on first use (one-time).
+   * Throws UnauthorizedException if absent or expired.
+   */
+  async validateTicket(ticket: string): Promise<string> {
+    const key = `sse:ticket:${ticket}`
+    const userId = await this.redis.get(key)
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired SSE ticket')
+    }
+    await this.redis.del(key)
+    return userId
   }
 
   getStream(articleId: string, userId: string): Observable<MessageEvent> {
