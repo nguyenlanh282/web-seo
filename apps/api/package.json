@@ -27,6 +27,8 @@
     "@nestjs/swagger": "^8.1.0",
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.1.0",
+    "@sentry/nestjs": "^10.43.0",
+    "@sentry/node": "^10.43.0",
     "@seopen/shared": "*",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",

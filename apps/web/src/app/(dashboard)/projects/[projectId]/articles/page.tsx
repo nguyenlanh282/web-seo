@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { articlesApi, projectsApi } from '@/lib/api'
+import { articlesApi, projectsApi, usersApi } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import {
   Plus,
@@ -85,7 +91,16 @@ export default function ArticlesPage() {
     queryFn: () => articlesApi.list(projectId),
   })
 
+  const { data: stats } = useQuery({
+    queryKey: ['user-stats'],
+    queryFn: () => usersApi.stats(),
+  })
+
   const articles: Article[] = Array.isArray(articlesData) ? articlesData : []
+
+  const articlesUsed = stats?.articlesUsedMonth ?? stats?.articlesUsed ?? 0
+  const articlesLimit = stats?.articlesLimit ?? 30
+  const isQuotaExhausted = articlesUsed >= articlesLimit
 
   const createMutation = useMutation({
     mutationFn: (data: { title: string; targetKeyword: string; projectId: string }) =>
@@ -160,13 +175,30 @@ export default function ArticlesPage() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm() }}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm">
-              <Plus className="mr-1.5 h-4 w-4" />
-              Tạo bài viết mới
-            </Button>
-          </DialogTrigger>
+        <TooltipProvider>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm() }}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* span wrapper lets tooltip fire even when button is disabled */}
+                <span tabIndex={isQuotaExhausted ? 0 : undefined} className="inline-flex">
+                  <DialogTrigger asChild>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                      disabled={isQuotaExhausted}
+                      onClick={isQuotaExhausted ? (e) => e.preventDefault() : undefined}
+                    >
+                      <Plus className="mr-1.5 h-4 w-4" />
+                      Tạo bài viết mới
+                    </Button>
+                  </DialogTrigger>
+                </span>
+              </TooltipTrigger>
+              {isQuotaExhausted && (
+                <TooltipContent>
+                  Hết quota tháng này — Nâng cấp
+                </TooltipContent>
+              )}
+            </Tooltip>
           <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
               <DialogTitle>Tạo bài viết mới</DialogTitle>
@@ -233,7 +265,8 @@ export default function ArticlesPage() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </TooltipProvider>
       </div>
 
       {/* Articles list */}
@@ -244,13 +277,27 @@ export default function ArticlesPage() {
           <p className="text-slate-500 text-sm mb-4">
             Bắt đầu tạo bài viết SEO đầu tiên cho dự án này
           </p>
-          <Button
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Tạo bài viết
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={isQuotaExhausted ? 0 : undefined} className="inline-flex">
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={isQuotaExhausted}
+                    onClick={() => { if (!isQuotaExhausted) setIsDialogOpen(true) }}
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Tạo bài viết
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {isQuotaExhausted && (
+                <TooltipContent>
+                  Hết quota tháng này — Nâng cấp
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </div>
       ) : (
         <Card>

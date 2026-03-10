@@ -13,16 +13,17 @@ import posthog from 'posthog-js'
 // ─── Event catalog (keep exhaustive, add new events here) ──────────────────
 
 export type AnalyticsEvent =
-  | { name: 'article_created';       props: { keyword: string; projectId?: string } }
-  | { name: 'step_completed';        props: { step: 1 | 2 | 3 | 4 | 5; articleId: string; keyword?: string } }
-  | { name: 'article_published';     props: { articleId: string; wpSiteId: string; seoScore?: number } }
-  | { name: 'export_html';           props: { articleId: string; wordCount?: number; seoScore?: number } }
-  | { name: 'ai_action';             props: { action: string; articleId: string } }
-  | { name: 'plan_limit_hit';        props: { code: string; plan: string } }
-  | { name: 'rate_limit_hit';        props: { scope?: string; retryAfter?: number } }
-  | { name: 'upgrade_modal_opened';  props: { reason: string; currentPlan?: string } }
-  | { name: 'upgrade_clicked';       props: { from: string; targetPlan?: string } }
-  | { name: 'wp_site_added';         props: { userId: string } }
+  | { name: 'article_created';         props: { keyword: string; projectId?: string } }
+  | { name: 'step_completed';          props: { step: 1 | 2 | 3 | 4 | 5; articleId: string; keyword?: string } }
+  | { name: 'article_published';       props: { articleId: string; wpSiteId: string; seoScore?: number } }
+  | { name: 'article_retry_publish';   props: { articleId: string; wpSiteId?: string } }
+  | { name: 'export_html';             props: { articleId: string; wordCount?: number; seoScore?: number } }
+  | { name: 'ai_action';               props: { action: string; articleId: string } }
+  | { name: 'plan_limit_hit';          props: { code: string; plan: string } }
+  | { name: 'rate_limit_hit';          props: { scope?: string; retryAfter?: number } }
+  | { name: 'upgrade_modal_opened';    props: { reason: string; currentPlan?: string } }
+  | { name: 'upgrade_clicked';         props: { from: string; targetPlan?: string } }
+  | { name: 'wp_site_added';           props: { userId: string } }
 
 // ─── Core helpers ───────────────────────────────────────────────────────────
 

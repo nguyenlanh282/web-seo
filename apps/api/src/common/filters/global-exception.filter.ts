@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { Request, Response } from 'express'
+import * as Sentry from '@sentry/nestjs'
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -58,6 +59,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       `${request.method} ${request.url} - ${status}: ${Array.isArray(message) ? message.join(', ') : message}`,
       exception instanceof Error ? exception.stack : String(exception),
     )
+
+    // Capture 5xx errors in Sentry for production observability
+    if (status >= 500) {
+      Sentry.captureException(exception)
+    }
 
     const body: Record<string, unknown> = {
       success: false,

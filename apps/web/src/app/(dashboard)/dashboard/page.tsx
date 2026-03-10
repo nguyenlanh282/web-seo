@@ -9,6 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import {
   FileText,
   CheckCircle2,
   FileEdit,
@@ -63,6 +69,7 @@ export default function DashboardPage() {
   const articlesLimit = stats?.articlesLimit ?? 30
   const articlesUsed = stats?.articlesUsed ?? 0
   const quotaPercent = articlesLimit > 0 ? Math.round((articlesUsed / articlesLimit) * 100) : 0
+  const isQuotaExhausted = articlesUsed >= articlesLimit
 
   const recentArticles = Array.isArray(articlesData) ? articlesData : []
 
@@ -200,10 +207,27 @@ export default function DashboardPage() {
                 Chưa có bài viết nào. Tạo bài viết đầu tiên để bắt đầu!
               </p>
               <Link href="/projects">
-                <Button size="sm" className="mt-3 bg-blue-600 hover:bg-blue-700">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Tạo bài viết
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={isQuotaExhausted ? 0 : undefined} className="inline-flex">
+                        <Button
+                          size="sm"
+                          className="mt-3 bg-blue-600 hover:bg-blue-700"
+                          disabled={isQuotaExhausted}
+                        >
+                          <Plus className="mr-1.5 h-3.5 w-3.5" />
+                          Tạo bài viết
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {isQuotaExhausted && (
+                      <TooltipContent>
+                        Hết quota tháng này — Nâng cấp
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </Link>
             </div>
           ) : (

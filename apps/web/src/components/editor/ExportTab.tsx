@@ -53,6 +53,10 @@ interface ExportTabProps {
   status: string
   /** HTML string returned by step5 export */
   exportedHtml?: string
+  /** WP post ID saved after a previous publish (present on PARTIAL state) */
+  wpPostId?: number | null
+  /** WP post URL saved after a previous publish (present on PARTIAL state) */
+  wpPostUrl?: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +69,8 @@ export default function ExportTab({
   seoScore,
   status,
   exportedHtml: initialHtml,
+  wpPostId,
+  wpPostUrl: initialWpPostUrl,
 }: ExportTabProps) {
   const queryClient = useQueryClient()
   const [selectedSiteId, setSelectedSiteId] = useState<string>('')
@@ -111,6 +117,22 @@ export default function ExportTab({
         err?.response?.data?.message ||
         err?.response?.data?.error?.message ||
         'Không thể bắt đầu publish'
+      setPublish({ phase: 'failed', progress: 0, message: msg, error: msg })
+      toast.error(msg)
+    },
+  })
+
+  const retryMutation = useMutation({
+    mutationFn: () => articlesApi.retryPublish(articleId, selectedSiteId || undefined),
+    onSuccess: () => {
+      setPublish({ phase: 'publishing', progress: 5, message: 'Đang thử lại...' })
+      startSseListener()
+    },
+    onError: (err: any) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error?.message ||
+        'Không thể thử lại publish'
       setPublish({ phase: 'failed', progress: 0, message: msg, error: msg })
       toast.error(msg)
     },
@@ -181,6 +203,9 @@ export default function ExportTab({
   const canExport =
     status === 'SEO_CHECKED' || status === 'EXPORTED' || status === 'PUBLISHED'
   const canPublish = canExport && !!selectedSiteId && publish.phase !== 'publishing'
+
+  // PARTIAL: article is PUBLISHED in DB but WP URL was never saved (publish job crashed after WP call)
+  const isPartialPublish = status === 'PUBLISHED' && !initialWpPostUrl && publish.phase === 'idle'
 
   const resetPublish = () =>
     setPublish({ phase: 'idle', progress: 0, message: '' })
@@ -264,6 +289,33 @@ export default function ExportTab({
                 </SelectContent>
               </Select>
 
+              {/* PARTIAL publish warning: status=PUBLISHED but no WP URL saved */}
+              {isPartialPublish && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-medium">Bài viết đã được đăng nhưng chưa lưu được URL</p>
+                    <p className="text-xs mt-0.5 opacity-80">
+                      Job publish trước đó bị gián đoạn. Chọn site và nhấn "Thử lại publish" để đồng bộ lại.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 border-amber-400 text-amber-800 hover:bg-amber-100 gap-1"
+                    disabled={!selectedSiteId || retryMutation.isPending}
+                    onClick={() => retryMutation.mutate()}
+                  >
+                    {retryMutation.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    )}
+                    Thử lại publish
+                  </Button>
+                </div>
+              )}
+
               {/* Publish progress */}
               {publish.phase !== 'idle' && (
                 <div className="space-y-2 rounded-lg border bg-slate-50 p-4">
@@ -307,15 +359,33 @@ export default function ExportTab({
                       {publish.error && (
                         <p className="text-xs text-red-600">{publish.error}</p>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={resetPublish}
-                        className="gap-1"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        Thử lại
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={resetPublish}
+                          className="gap-1"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Đặt lại
+                        </Button>
+                        {selectedSiteId && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="gap-1 bg-blue-600 hover:bg-blue-700"
+                            disabled={retryMutation.isPending}
+                            onClick={() => retryMutation.mutate()}
+                          >
+                            {retryMutation.isPending ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            )}
+                            Thử lại publish
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

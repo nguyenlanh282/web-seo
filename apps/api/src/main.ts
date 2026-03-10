@@ -3,9 +3,18 @@ import { ValidationPipe } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import helmet from 'helmet'
 import * as cookieParser from 'cookie-parser'
+import * as Sentry from '@sentry/nestjs'
 import { AppModule } from './app.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor'
+
+// Initialize Sentry before the app is created so all exceptions are captured
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  // Only enable Sentry if DSN is provided (avoids noise in local dev)
+  enabled: !!process.env.SENTRY_DSN,
+})
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {

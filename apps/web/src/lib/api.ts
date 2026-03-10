@@ -220,6 +220,13 @@ export const articlesApi = {
   // Status transition
   updateStatus: (id: string, status: string) =>
     api.patch(`/articles/${id}/status`, { status }).then(extractData),
+
+  // Retry publish (re-enqueue BullMQ job after PARTIAL/FAILED)
+  retryPublish: (articleId: string, wpSiteId?: string) =>
+    api.post(`/articles/${articleId}/retry-publish`, wpSiteId ? { wpSiteId } : {}).then(extractData).then((res: any) => {
+      track('article_retry_publish', { articleId, wpSiteId })
+      return res
+    }),
 }
 
 // ============================================================================
