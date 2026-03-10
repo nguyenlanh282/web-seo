@@ -1,0 +1,29 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+const protectedRoutes = ['/dashboard', '/projects', '/articles', '/settings'];
+const authRoutes = ['/login', '/register'];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Check for access token in cookies (set on login)
+  const token = request.cookies.get('access_token')?.value;
+
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+
+  if (isProtectedRoute && !token) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  if (isAuthRoute && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+};

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEOPen - Dự Án</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=DM+Sans:ital,wght@0,400;0,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#3B82F6;--blue-dark:#2563EB;--blue-light:#EFF6FF;
+  --purple:#8B5CF6;--purple-dark:#6D28D9;--purple-light:#F5F3FF;
+  --green:#22C55E;--green-light:#F0FDF4;
+  --amber:#F59E0B;--amber-light:#FFFBEB;
+  --red:#EF4444;
+  --bg:#F8FAFC;--surface:#FFFFFF;--border:#E2E8F0;
+  --text:#0F172A;--muted:#64748B;--disabled:#94A3B8;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.10),0 2px 4px -1px rgba(0,0,0,.06);
+  --font-h:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;display:flex;min-height:100vh}
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:15px;font-family:var(--font-h)}
+.logo-text{font-family:var(--font-h);font-size:18px;font-weight:700}.logo-text span{color:var(--blue)}
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:10px;font-weight:600;color:var(--disabled);text-transform:uppercase;letter-spacing:.08em;padding:8px 12px 4px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all 150ms;text-decoration:none}
+.nav-item:hover{background:var(--bg);color:var(--text)}.nav-item.active{background:var(--blue-light);color:var(--blue-dark);font-weight:600}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-bottom{padding:14px;border-top:1px solid var(--border)}
+.plan-card{background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border:1px solid #DDD6FE;border-radius:8px;padding:12px 14px}
+.plan-name{font-size:14px;font-weight:700;color:var(--purple-dark);font-family:var(--font-h)}
+.plan-credits{font-size:12px;color:var(--purple);margin-top:3px}
+.main-wrap{margin-left:240px;flex:1;display:flex;flex-direction:column}
+.header{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm)}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:14px;flex:1}
+.bc-item{color:var(--muted);text-decoration:none}.bc-item:hover{color:var(--blue)}
+.bc-active{color:var(--text);font-weight:500}
+.bc-sep{color:var(--disabled)}
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.hdr-btn{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background 150ms}
+.hdr-btn:hover{background:var(--bg)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));color:white;font-size:12px;font-weight:700;font-family:var(--font-h);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.page{flex:1;padding:28px 32px}
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.page-title{font-family:var(--font-h);font-size:24px;font-weight:700}
+.page-sub{font-size:14px;color:var(--muted);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:var(--font-b);transition:all 150ms}
+.btn-primary{background:var(--blue);color:white;box-shadow:var(--shadow-sm)}.btn-primary:hover{background:var(--blue-dark)}
+.btn-secondary{background:white;color:var(--text);border:1.5px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+</style>
+</head>
+<style>
+/* PROJECT GRID */
+.projects-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.search-input{flex:1;max-width:320px;padding:9px 14px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-b);font-size:14px;outline:none;transition:border-color 150ms}
+.search-input:focus{border-color:var(--blue)}
+.filter-select{padding:9px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-b);font-size:13px;color:var(--text);background:white;cursor:pointer;outline:none}
+.view-toggle{display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.view-btn{padding:8px 12px;background:white;border:none;cursor:pointer;font-size:14px;transition:background 150ms;color:var(--muted)}
+.view-btn.active{background:var(--blue-light);color:var(--blue-dark)}
+.projects-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.project-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0;box-shadow:var(--shadow-sm);transition:all 200ms;overflow:hidden;cursor:pointer}
+.project-card:hover{box-shadow:var(--shadow-md);border-color:#CBD5E1;transform:translateY(-2px)}
+.project-card-top{height:6px}
+.project-card-body{padding:20px}
+.project-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
+.project-name{font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.project-desc{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.project-stats{display:flex;gap:16px;margin-bottom:16px}
+.project-stat{text-align:center}
+.pstat-val{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--text)}
+.pstat-lbl{font-size:11px;color:var(--muted);margin-top:1px}
+.project-footer{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #F1F5F9}
+.project-date{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.project-actions{display:flex;gap:4px}
+.proj-btn{padding:5px 10px;border-radius:5px;border:1px solid var(--border);background:white;font-size:12px;cursor:pointer;color:var(--muted);transition:all 150ms}
+.proj-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.proj-btn.danger:hover{border-color:var(--red);color:var(--red);background:#FEF2F2}
+.project-card-new{border:2px dashed var(--border);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:200px;transition:all 200ms}
+.project-card-new:hover{border-color:var(--blue);background:var(--blue-light)}
+.new-icon{font-size:32px;color:var(--disabled)}
+.project-card-new:hover .new-icon{color:var(--blue)}
+.new-label{font-size:14px;font-weight:600;color:var(--muted)}
+.project-card-new:hover .new-label{color:var(--blue)}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:12px;padding:28px;width:100%;max-width:480px;box-shadow:var(--shadow-lg);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-title{font-family:var(--font-h);font-size:20px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px}
+.input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-b);font-size:14px;color:var(--text);background:var(--surface);transition:border-color 150ms;outline:none}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.color-opt{width:28px;height:28px;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:transform 150ms}
+.color-opt:hover{transform:scale(1.15)}
+.color-opt.selected{border-color:var(--text);transform:scale(1.1)}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.main-wrap{margin-left:0}
+  .projects-grid{grid-template-columns:1fr}
+  .page{padding:16px}
+}
+</style>
+<body>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">S</div>
+    <span class="logo-text">SEO<span>Pen</span></span>
+  </div>
+  <nav class="sidebar-nav">
+    <span class="nav-label">Tổng quan</span>
+    <a class="nav-item" href="01-dashboard.html"><span class="nav-icon">&#9974;</span> Dashboard</a>
+    <a class="nav-item" href="02-article-editor.html"><span class="nav-icon">&#128196;</span> Bài viết</a>
+    <span class="nav-label">Quản lý</span>
+    <a class="nav-item active" href="03-projects.html"><span class="nav-icon">&#128193;</span> Dự án</a>
+    <a class="nav-item" href="#"><span class="nav-icon">&#128269;</span> Từ khóa</a>
+    <a class="nav-item" href="04-wordpress-connections.html"><span class="nav-icon">&#127758;</span> WordPress</a>
+    <span class="nav-label">Tài khoản</span>
+    <a class="nav-item" href="05-pricing.html"><span class="nav-icon">&#10024;</span> Nâng cấp</a>
+    <a class="nav-item" href="#"><span class="nav-icon">&#9881;&#65039;</span> Cài đặt</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="plan-card"><div class="plan-name">&#9889; Pro Plan</div><div class="plan-credits">23 / 30 bài viết còn lại</div></div>
+  </div>
+</aside>
+
+<div class="main-wrap">
+  <header class="header">
+    <nav class="breadcrumb">
+      <a class="bc-item" href="01-dashboard.html">SEOPen</a>
+      <span class="bc-sep">&#8250;</span>
+      <span class="bc-active">Dự án</span>
+    </nav>
+    <div class="hdr-actions">
+      <button class="hdr-btn">&#128269;</button>
+      <button class="hdr-btn">&#128276;</button>
+      <div class="avatar">NV</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">&#128193; Dự án</h1>
+        <p class="page-sub">Quản lý và nhóm bài viết theo dự án hoặc khách hàng</p>
+      </div>
+      <button class="btn btn-primary" onclick="document.getElementById('newProjectModal').classList.add('show')">
+        <span style="font-size:16px">+</span> Tạo dự án mới
+      </button>
+    </div>
+
+    <div class="projects-toolbar">
+      <input class="search-input" type="text" placeholder="&#128269; Tìm kiếm dự án...">
+      <select class="filter-select">
+        <option>Tất cả trạng thái</option>
+        <option>Đang hoạt động</option>
+        <option>Hoàn thành</option>
+      </select>
+      <select class="filter-select">
+        <option>Mới nhất</option>
+        <option>Cũ nhất</option>
+        <option>Nhiều bài nhất</option>
+      </select>
+      <div class="view-toggle">
+        <button class="view-btn active" title="Dạng lưới">&#9638;</button>
+        <button class="view-btn" title="Dạng danh sách">&#9776;</button>
+      </div>
+    </div>
+
+    <div class="projects-grid">
+      <!-- PROJECT CARD 1 -->
+      <div class="project-card">
+        <div class="project-card-top" style="background:linear-gradient(90deg,#3B82F6,#6366F1)"></div>
+        <div class="project-card-body">
+          <div class="project-icon" style="background:#EFF6FF">&#128196;</div>
+          <div class="project-name">SEO Blog</div>
+          <div class="project-desc">Blog SEO, content marketing và digital marketing cho thị trường Việt Nam</div>
+          <div class="project-stats">
+            <div class="project-stat"><div class="pstat-val">18</div><div class="pstat-lbl">Bài viết</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#22C55E">12</div><div class="pstat-lbl">Đã đăng</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#3B82F6">84</div><div class="pstat-lbl">Điểm TB</div></div>
+          </div>
+          <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Tiến độ</span><span style="font-weight:600">8/10 bài</span></div><div style="height:5px;background:var(--border);border-radius:9999px;overflow:hidden"><div style="height:100%;width:80%;background:#3B82F6;border-radius:9999px"></div></div></div>
+          <div class="project-footer"><span class="project-date">&#128197; 05/03/2026</span><div class="project-actions"><button class="proj-btn" onclick="window.location='02-article-editor.html'">+ Bài mới</button><button class="proj-btn">&#9998;</button><button class="proj-btn danger">&#128465;</button></div></div>
+        </div>
+      </div>
+
+      <!-- PROJECT CARD 2 -->
+      <div class="project-card">
+        <div class="project-card-top" style="background:linear-gradient(90deg,#8B5CF6,#EC4899)"></div>
+        <div class="project-card-body">
+          <div class="project-icon" style="background:#F5F3FF">&#127979;</div>
+          <div class="project-name">Agency Khách Hàng ABC</div>
+          <div class="project-desc">Nội dung phần mềm ERP và quản trị doanh nghiệp cho công ty ABC</div>
+          <div class="project-stats">
+            <div class="project-stat"><div class="pstat-val">9</div><div class="pstat-lbl">Bài viết</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#22C55E">6</div><div class="pstat-lbl">Đã đăng</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#F59E0B">71</div><div class="pstat-lbl">Điểm TB</div></div>
+          </div>
+          <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Tiến độ</span><span style="font-weight:600">3/5 bài</span></div><div style="height:5px;background:var(--border);border-radius:9999px;overflow:hidden"><div style="height:100%;width:60%;background:#8B5CF6;border-radius:9999px"></div></div></div>
+          <div class="project-footer"><span class="project-date">&#128197; 03/03/2026</span><div class="project-actions"><button class="proj-btn">+ Bài mới</button><button class="proj-btn">&#9998;</button><button class="proj-btn danger">&#128465;</button></div></div>
+        </div>
+      </div>
+
+      <!-- PROJECT CARD 3 -->
+      <div class="project-card">
+        <div class="project-card-top" style="background:linear-gradient(90deg,#22C55E,#14B8A6)"></div>
+        <div class="project-card-body">
+          <div class="project-icon" style="background:#F0FDF4">&#127758;</div>
+          <div class="project-name">WordPress Tips VN</div>
+          <div class="project-desc">Hướng dẫn kỹ thuật WordPress, tối ưu tốc độ, bảo mật và plugin Việt Nam</div>
+          <div class="project-stats">
+            <div class="project-stat"><div class="pstat-val">12</div><div class="pstat-lbl">Bài viết</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#22C55E">10</div><div class="pstat-lbl">Đã đăng</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#22C55E">91</div><div class="pstat-lbl">Điểm TB</div></div>
+          </div>
+          <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Tiến độ</span><span style="font-weight:600">2/4 bài</span></div><div style="height:5px;background:var(--border);border-radius:9999px;overflow:hidden"><div style="height:100%;width:50%;background:#22C55E;border-radius:9999px"></div></div></div>
+          <div class="project-footer"><span class="project-date">&#128197; 01/03/2026</span><div class="project-actions"><button class="proj-btn">+ Bài mới</button><button class="proj-btn">&#9998;</button><button class="proj-btn danger">&#128465;</button></div></div>
+        </div>
+      </div>
+      <!-- PROJECT CARD 4 -->
+      <div class="project-card">
+        <div class="project-card-top" style="background:linear-gradient(90deg,#F59E0B,#EF4444)"></div>
+        <div class="project-card-body">
+          <div class="project-icon" style="background:#FFFBEB">&#128270;</div>
+          <div class="project-name">Review Công Cụ SEO</div>
+          <div class="project-desc">Đánh giá so sánh Ahrefs, SEMrush, Moz, Ubersuggest cho thị trường Việt Nam</div>
+          <div class="project-stats">
+            <div class="project-stat"><div class="pstat-val">5</div><div class="pstat-lbl">Bài viết</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#22C55E">3</div><div class="pstat-lbl">Đã đăng</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#3B82F6">76</div><div class="pstat-lbl">Điểm TB</div></div>
+          </div>
+          <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Tiến độ</span><span style="font-weight:600">1/3 bài</span></div><div style="height:5px;background:var(--border);border-radius:9999px;overflow:hidden"><div style="height:100%;width:33%;background:#F59E0B;border-radius:9999px"></div></div></div>
+          <div class="project-footer"><span class="project-date">&#128197; 28/02/2026</span><div class="project-actions"><button class="proj-btn">+ Bài mới</button><button class="proj-btn">&#9998;</button><button class="proj-btn danger">&#128465;</button></div></div>
+        </div>
+      </div>
+
+      <!-- PROJECT CARD 5 -->
+      <div class="project-card">
+        <div class="project-card-top" style="background:linear-gradient(90deg,#06B6D4,#3B82F6)"></div>
+        <div class="project-card-body">
+          <div class="project-icon" style="background:#ECFEFF">&#129302;</div>
+          <div class="project-name">AEO &amp; AI Content</div>
+          <div class="project-desc">Nội dung tối ưu Answer Engine (Google SGE). Dạng Q&amp;A và Featured Snippets</div>
+          <div class="project-stats">
+            <div class="project-stat"><div class="pstat-val">3</div><div class="pstat-lbl">Bài viết</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#F59E0B">1</div><div class="pstat-lbl">Đã đăng</div></div>
+            <div class="project-stat"><div class="pstat-val" style="color:#F59E0B">67</div><div class="pstat-lbl">Điểm TB</div></div>
+          </div>
+          <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Tiến độ</span><span style="font-weight:600">1/5 bài</span></div><div style="height:5px;background:var(--border);border-radius:9999px;overflow:hidden"><div style="height:100%;width:20%;background:#06B6D4;border-radius:9999px"></div></div></div>
+          <div class="project-footer"><span class="project-date">&#128197; 25/02/2026</span><div class="project-actions"><button class="proj-btn">+ Bài mới</button><button class="proj-btn">&#9998;</button><button class="proj-btn danger">&#128465;</button></div></div>
+        </div>
+      </div>
+
+      <!-- NEW PROJECT CARD -->
+      <div class="project-card project-card-new" onclick="document.getElementById('newProjectModal').classList.add('show')">
+        <div class="new-icon" style="font-size:32px;color:var(--disabled)">+</div>
+        <div class="new-label" style="font-size:14px;font-weight:600;color:var(--muted)">Tạo dự án mới</div>
+        <div style="font-size:12px;color:var(--disabled);text-align:center;padding:0 20px">Nhóm bài viết theo chủ đề hoặc khách hàng</div>
+      </div>
+    </div><!-- /projects-grid -->
+
+  </main>
+</div>
+
+<!-- NEW PROJECT MODAL -->
+<div class="modal-overlay" id="newProjectModal">
+  <div class="modal">
+    <div class="modal-title">&#128193; Tạo dự án mới</div>
+    <div class="modal-sub">Điền thông tin để tạo dự án và bắt đầu nhóm bài viết</div>
+    <div class="form-group">
+      <label class="form-label">Tên dự án *</label>
+      <input class="input" type="text" placeholder="Ví dụ: Blog Marketing 2024">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mô tả</label>
+      <textarea class="input" rows="3" placeholder="Mô tả mục tiêu, đối tượng của dự án này..." style="resize:vertical"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Màu sắc</label>
+      <div class="color-picker">
+        <div class="color-opt selected" style="background:#3B82F6"></div>
+        <div class="color-opt" style="background:#8B5CF6"></div>
+        <div class="color-opt" style="background:#22C55E"></div>
+        <div class="color-opt" style="background:#F59E0B"></div>
+        <div class="color-opt" style="background:#EF4444"></div>
+        <div class="color-opt" style="background:#06B6D4"></div>
+        <div class="color-opt" style="background:#EC4899"></div>
+        <div class="color-opt" style="background:#14B8A6"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kết nối WordPress (tùy chọn)</label>
+      <select class="input">
+        <option value="">Không kết nối</option>
+        <option>seopro.vn (WordPress)</option>
+        <option>blog.agency.vn (WordPress)</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('newProjectModal').classList.remove('show')">Hủy</button>
+      <button class="btn btn-primary">&#128193; Tạo dự án</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('newProjectModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('show');
+});
+document.querySelectorAll('.color-opt').forEach(function(opt) {
+  opt.addEventListener('click', function() {
+    document.querySelectorAll('.color-opt').forEach(function(o) { o.classList.remove('selected'); });
+    this.classList.add('selected');
+  });
+});
+</script>
+</body>
+</html>

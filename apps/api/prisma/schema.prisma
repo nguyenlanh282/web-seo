@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserPlan {
+  STARTER
+  PRO
+  AGENCY
+}
+
+enum ArticleStatus {
+  DRAFT
+  KEYWORD_ANALYZED
+  OUTLINED
+  CONTENT_WRITTEN
+  SEO_CHECKED
+  EXPORTED
+  PUBLISHED
+}
+
+enum ChecklistType {
+  HEADLINE_KEYWORD
+  META_DESCRIPTION
+  HEADING_STRUCTURE
+  IMAGE_ALT
+  IMAGE_FILENAME
+  KEYWORD_COVERAGE
+  TAGS
+  INTERNAL_EXTERNAL_LINKS
+  ANCHOR_TEXT
+  CONTENT_LENGTH
+  READABILITY
+  CONTENT_GAP_COVERAGE
+}
+
+enum AIActionType {
+  REWRITE
+  EXPAND
+  SIMPLIFY
+  HUMANIZE
+  KEYWORD_ANALYSIS
+  OUTLINE_GENERATION
+  CONTENT_WRITING
+}
+
+enum InternalLinkType {
+  MANUAL
+  SUGGESTED
+  AUTO
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String?
+  avatarUrl         String?
+  googleId          String?   @unique
+  passwordHash      String?
+  refreshTokenHash  String?
+  anthropicKeyEnc   String?   // AES-256-GCM encrypted
+  anthropicKeyIv    String?
+  anthropicKeyTag   String?
+  serpApiKeyEnc     String?   // AES-256-GCM encrypted
+  serpApiKeyIv      String?
+  serpApiKeyTag     String?
+  plan              UserPlan  @default(STARTER)
+  planExpiresAt     DateTime?
+  articlesUsedMonth Int       @default(0)
+  monthResetAt      DateTime  @default(now())
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  projects          Project[]
+  articles          Article[]
+  wpSites           WpSite[]
+  aiLogs            AILog[]
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  domain      String?
+  language    String   @default("vi")
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articles    Article[]
+
+  @@index([userId])
+}
+
+model Article {
+  id              String        @id @default(cuid())
+  title           String
+  slug            String?
+  targetKeyword   String
+  metaDescription String?
+  content         String?       @db.Text
+  contentHtml     String?       @db.Text
+  outline         Json?
+  keywords        Json?
+  seoScore        Int?
+  readabilityScore Int?
+  wordCount       Int?
+  status          ArticleStatus @default(DRAFT)
+  userId          String
+  projectId       String?
+  wpSiteId        String?
+  publishedAt     DateTime?
+  wpPostId        Int?
+  wpPostUrl       String?
+  creditCharged   Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  wpSite          WpSite?       @relation(fields: [wpSiteId], references: [id], onDelete: SetNull)
+  seoChecklist    SeoChecklist[]
+  jobLogs         JobLog[]
+  aiLogs          AILog[]
+  articleKeywords ArticleKeyword[]
+  images          ArticleImage[]
+  sourceLinks     InternalLink[]   @relation("SourceArticle")
+  targetLinks     InternalLink[]   @relation("TargetArticle")
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([status])
+  @@index([targetKeyword])
+}
+
+model SeoChecklist {
+  id          String        @id @default(cuid())
+  articleId   String
+  type        ChecklistType
+  passed      Boolean
+  score       Int           @default(0)
+  maxScore    Int           @default(0)
+  details     Json?
+  suggestions String[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  article     Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, type])
+  @@index([articleId])
+}
+
+model WpSite {
+  id           String    @id @default(cuid())
+  name         String
+  url          String
+  username     String
+  passwordEnc  String
+  userId       String
+  isActive     Boolean   @default(true)
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  articles     Article[]
+
+  @@index([userId])
+}
+
+model JobLog {
+  id         String   @id @default(cuid())
+  articleId  String
+  step       String
+  status     String
+  progress   Int      @default(0)
+  message    String?
+  errorMsg   String?
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([status])
+}
+
+model Keyword {
+  id         String   @id @default(cuid())
+  keyword    String   @unique
+  serpData   Json?
+  cachedAt   DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  articleKeywords ArticleKeyword[]
+
+  @@index([keyword])
+}
+
+model ArticleKeyword {
+  articleId  String
+  keywordId  String
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  keyword    Keyword  @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, keywordId])
+  @@index([articleId])
+  @@index([keywordId])
+}
+
+model AILog {
+  id           String       @id @default(cuid())
+  userId       String
+  articleId    String?
+  action       AIActionType
+  model        String
+  inputTokens  Int          @default(0)
+  outputTokens Int          @default(0)
+  latencyMs    Int          @default(0)
+  cost         Float        @default(0)
+  createdAt    DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article      Article?     @relation(fields: [articleId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model ArticleImage {
+  id          String   @id @default(cuid())
+  articleId   String
+  url         String
+  altText     String?
+  fileName    String?
+  width       Int?
+  height      Int?
+  fileSize    Int?     // bytes
+  isOptimized Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+}
+
+model InternalLink {
+  id           String            @id @default(cuid())
+  sourceArticleId String
+  targetArticleId String?
+  targetUrl    String?
+  anchorText   String
+  linkType     InternalLinkType  @default(MANUAL)
+  status       String            @default("pending") // pending, inserted, broken
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  sourceArticle Article @relation("SourceArticle", fields: [sourceArticleId], references: [id], onDelete: Cascade)
+  targetArticle Article? @relation("TargetArticle", fields: [targetArticleId], references: [id], onDelete: SetNull)
+
+  @@index([sourceArticleId])
+  @@index([targetArticleId])
+}

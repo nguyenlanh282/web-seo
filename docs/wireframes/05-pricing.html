@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEOPen - Gói Cước</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=DM+Sans:ital,wght@0,400;0,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#3B82F6;--blue-dark:#2563EB;--blue-light:#EFF6FF;
+  --purple:#8B5CF6;--purple-dark:#6D28D9;--purple-light:#F5F3FF;
+  --green:#22C55E;--green-light:#F0FDF4;
+  --amber:#F59E0B;--amber-light:#FFFBEB;
+  --red:#EF4444;
+  --bg:#F8FAFC;--surface:#FFFFFF;--border:#E2E8F0;
+  --text:#0F172A;--muted:#64748B;--disabled:#94A3B8;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.10);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.10);
+  --font-h:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;display:flex;min-height:100vh}
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:15px;font-family:var(--font-h)}
+.logo-text{font-family:var(--font-h);font-size:18px;font-weight:700}.logo-text span{color:var(--blue)}
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:10px;font-weight:600;color:var(--disabled);text-transform:uppercase;letter-spacing:.08em;padding:8px 12px 4px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all 150ms;text-decoration:none}
+.nav-item:hover{background:var(--bg);color:var(--text)}.nav-item.active{background:var(--blue-light);color:var(--blue-dark);font-weight:600}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-bottom{padding:14px;border-top:1px solid var(--border)}
+.plan-card-sb{background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border:1px solid #DDD6FE;border-radius:8px;padding:12px 14px}
+.main-wrap{margin-left:240px;flex:1;display:flex;flex-direction:column}
+.header{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm)}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:14px;flex:1}
+.bc-item{color:var(--muted);text-decoration:none}.bc-active{color:var(--text);font-weight:500}.bc-sep{color:var(--disabled)}
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.hdr-btn{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background 150ms}
+.hdr-btn:hover{background:var(--bg)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));color:white;font-size:12px;font-weight:700;font-family:var(--font-h);display:flex;align-items:center;justify-content:center}
+.page{flex:1;padding:32px;overflow-y:auto}
+.page-hdr{text-align:center;margin-bottom:36px}
+.page-title{font-family:var(--font-h);font-size:28px;font-weight:700;margin-bottom:8px}
+.page-sub{font-size:16px;color:var(--muted);max-width:500px;margin:0 auto}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:var(--font-b);transition:all 150ms}
+.btn-primary{background:var(--blue);color:white;box-shadow:var(--shadow-sm)}.btn-primary:hover{background:var(--blue-dark)}
+.btn-secondary{background:white;color:var(--text);border:1.5px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+</style>
+</head>
+<style>
+/* BILLING TOGGLE */
+.billing-toggle{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:32px}
+.toggle-label{font-size:14px;font-weight:500}
+.toggle-switch{width:44px;height:24px;background:#CBD5E1;border-radius:9999px;position:relative;cursor:pointer;transition:background 200ms}
+.toggle-switch.on{background:var(--blue)}
+.toggle-knob{width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:left 200ms;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle-switch.on .toggle-knob{left:22px}
+.save-badge{background:var(--green-light);color:#15803D;font-size:11px;font-weight:700;padding:3px 8px;border-radius:9999px;border:1px solid #BBF7D0}
+/* PLANS */
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1020px;margin:0 auto 48px}
+.plan-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:28px;position:relative;transition:all 200ms}
+.plan-card:hover{box-shadow:var(--shadow-lg)}
+.plan-card.popular{border-color:var(--purple);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+.plan-card.current{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.popular-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:9999px;white-space:nowrap}
+.current-badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;font-size:11px;font-weight:700;padding:4px 14px;border-radius:9999px;white-space:nowrap}
+.plan-icon{font-size:36px;margin-bottom:12px}
+.plan-name{font-family:var(--font-h);font-size:20px;font-weight:700;margin-bottom:4px}
+.plan-desc{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.plan-price{display:flex;align-items:baseline;gap:4px;margin-bottom:4px}
+.price-amt{font-family:var(--font-h);font-size:40px;font-weight:700}
+.price-period{font-size:14px;color:var(--muted)}
+.price-annual{font-size:12px;color:var(--muted);margin-bottom:20px}
+.price-annual strong{color:var(--green)}
+.plan-divider{height:1px;background:var(--border);margin:20px 0}
+.plan-features{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.feature-item{display:flex;align-items:center;gap:8px;font-size:14px}
+.feature-item.included{color:var(--text)}
+.feature-item.excluded{color:var(--disabled)}
+.feat-icon{font-size:14px;flex-shrink:0}
+.feat-icon.inc{color:var(--green)}
+.feat-icon.exc{color:var(--disabled)}
+.plan-btn{width:100%;padding:12px;border-radius:8px;font-family:var(--font-h);font-size:15px;font-weight:700;cursor:pointer;border:none;transition:all 150ms;display:flex;align-items:center;justify-content:center;gap:8px}
+.plan-btn.blue{background:var(--blue);color:white;box-shadow:var(--shadow-sm)}.plan-btn.blue:hover{background:var(--blue-dark);box-shadow:var(--shadow-md)}
+.plan-btn.purple{background:linear-gradient(135deg,var(--purple),var(--purple-dark));color:white;box-shadow:var(--shadow-sm)}.plan-btn.purple:hover{box-shadow:var(--shadow-md)}
+.plan-btn.outline{background:white;color:var(--text);border:1.5px solid var(--border)}.plan-btn.outline:hover{background:var(--bg)}
+.plan-btn.current-plan{background:var(--blue-light);color:var(--blue-dark);cursor:default;border:1.5px solid #BFDBFE}
+/* FEATURE TABLE */
+.comparison-section{max-width:1020px;margin:0 auto 48px}
+.comp-title{font-family:var(--font-h);font-size:22px;font-weight:700;text-align:center;margin-bottom:24px}
+.comp-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}
+.comp-table thead th{background:#F8FAFC;padding:14px 20px;font-size:13px;font-weight:600;color:var(--muted);text-align:center;border-bottom:1px solid var(--border)}
+.comp-table thead th:first-child{text-align:left}
+.comp-table thead th.highlight-col{background:var(--purple-light);color:var(--purple-dark)}
+.comp-table thead th.current-col{background:var(--blue-light);color:var(--blue-dark)}
+.comp-table tbody td{padding:13px 20px;font-size:14px;border-bottom:1px solid #F8FAFC;text-align:center;vertical-align:middle}
+.comp-table tbody td:first-child{text-align:left;font-weight:500}
+.comp-table tbody tr:last-child td{border-bottom:none}
+.comp-table tbody tr:hover td{background:#FAFAFA}
+.comp-table .cat-row td{background:var(--bg);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 20px}
+.check-y{color:var(--green);font-size:16px}
+.check-n{color:var(--disabled);font-size:16px}
+.check-val{font-size:13px;font-weight:600}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.main-wrap{margin-left:0}
+  .plans-grid{grid-template-columns:1fr}
+  .page{padding:16px}
+}
+</style>
+<body>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">S</div><span class="logo-text">SEO<span>Pen</span></span></div>
+  <nav class="sidebar-nav">
+    <span class="nav-label">Tổng quan</span>
+    <a class="nav-item" href="01-dashboard.html"><span class="nav-icon">&#9974;</span> Dashboard</a>
+    <a class="nav-item" href="02-article-editor.html"><span class="nav-icon">&#128196;</span> Bài viết</a>
+    <span class="nav-label">Quản lý</span>
+    <a class="nav-item" href="03-projects.html"><span class="nav-icon">&#128193;</span> Dự án</a>
+    <a class="nav-item" href="#"><span class="nav-icon">&#128269;</span> Từ khóa</a>
+    <a class="nav-item" href="04-wordpress-connections.html"><span class="nav-icon">&#127758;</span> WordPress</a>
+    <span class="nav-label">Tài khoản</span>
+    <a class="nav-item active" href="05-pricing.html"><span class="nav-icon">&#10024;</span> Nâng cấp</a>
+    <a class="nav-item" href="#"><span class="nav-icon">&#9881;&#65039;</span> Cài đặt</a>
+  </nav>
+  <div class="sidebar-bottom"><div class="plan-card-sb"><div style="font-size:14px;font-weight:700;color:var(--purple-dark);font-family:var(--font-h)">&#9889; Pro Plan</div><div style="font-size:12px;color:var(--purple);margin-top:3px">23 / 30 bài viết còn lại</div></div></div>
+</aside>
+
+<div class="main-wrap">
+  <header class="header">
+    <nav class="breadcrumb">
+      <a class="bc-item" href="01-dashboard.html">SEOPen</a>
+      <span class="bc-sep">&#8250;</span>
+      <span class="bc-active">Gói cước &amp; Nâng cấp</span>
+    </nav>
+    <div class="hdr-actions">
+      <button class="hdr-btn">&#128269;</button>
+      <div class="avatar">NV</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-hdr">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--purple-light);color:var(--purple-dark);padding:5px 12px;border-radius:9999px;font-size:12px;font-weight:600;margin-bottom:12px">
+        &#9889; Gói hiện tại: Pro Plan
+      </div>
+      <h1 class="page-title">Chọn gói phù hợp với bạn</h1>
+      <p class="page-sub">Tất cả gói đều bao gồm AI writing, phân tích SERP và xuất WordPress. Nâng cấp bất cứ lúc nào.</p>
+    </div>
+
+    <!-- BILLING TOGGLE -->
+    <div class="billing-toggle">
+      <span class="toggle-label">Thanh toán hàng tháng</span>
+      <div class="toggle-switch on" id="billingToggle"><div class="toggle-knob"></div></div>
+      <span class="toggle-label">Hàng năm</span>
+      <span class="save-badge">Tiết kiệm 20%</span>
+    </div>
+
+    <!-- PLANS GRID -->
+    <div class="plans-grid">
+      <!-- STARTER PLAN -->
+      <div class="plan-card">
+        <div class="plan-icon">&#128218;</div>
+        <div class="plan-name">Starter</div>
+        <div class="plan-desc">Hoàn hảo cho blogger cá nhân và freelancer mới bắt đầu với SEO</div>
+        <div class="plan-price"><span class="price-amt">$19</span><span class="price-period">/tháng</span></div>
+        <div class="price-annual">$182/năm &mdash; <strong>tiết kiệm $46</strong></div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> <strong>10 bài viết</strong>/tháng</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Phân tích SERP Top 10</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> AI tạo đề cương</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> AI viết nội dung</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> SEO Score realtime</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> <strong>1</strong> kết nối WordPress</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Xuất HTML/Markdown</div>
+          <div class="feature-item excluded"><span class="feat-icon exc">&#10005;</span> <span style="text-decoration:line-through">Dự án không giới hạn</span></div>
+          <div class="feature-item excluded"><span class="feat-icon exc">&#10005;</span> <span style="text-decoration:line-through">Keyword tracking</span></div>
+          <div class="feature-item excluded"><span class="feat-icon exc">&#10005;</span> <span style="text-decoration:line-through">API access</span></div>
+          <div class="feature-item excluded"><span class="feat-icon exc">&#10005;</span> <span style="text-decoration:line-through">Hỗ trợ ưu tiên</span></div>
+        </div>
+        <button class="plan-btn outline">Chọn Starter</button>
+      </div>
+
+      <!-- PRO PLAN (CURRENT) -->
+      <div class="plan-card current">
+        <div class="current-badge">&#9989; Gói hiện tại</div>
+        <div class="plan-icon">&#9889;</div>
+        <div class="plan-name" style="color:var(--blue-dark)">Pro</div>
+        <div class="plan-desc">Cho SEO chuyên nghiệp và content marketing team nhỏ</div>
+        <div class="plan-price"><span class="price-amt" style="color:var(--blue)">$49</span><span class="price-period">/tháng</span></div>
+        <div class="price-annual">$470/năm &mdash; <strong>tiết kiệm $118</strong></div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> <strong>30 bài viết</strong>/tháng</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Phân tích SERP + Insights</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> AI tạo đề cương nâng cao</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> AI viết toàn bộ nội dung</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> SEO + AEO Score 12 tiêu chí</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> <strong>5</strong> kết nối WordPress</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Dự án không giới hạn</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Keyword tracking</div>
+          <div class="feature-item excluded"><span class="feat-icon exc">&#10005;</span> <span style="text-decoration:line-through">API access</span></div>
+          <div class="feature-item excluded"><span class="feat-icon exc">&#10005;</span> <span style="text-decoration:line-through">White-label export</span></div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Hỗ trợ ưu tiên (email)</div>
+        </div>
+        <button class="plan-btn current-plan">&#9989; Đang dùng gói này</button>
+      </div>
+
+      <!-- AGENCY PLAN -->
+      <div class="plan-card popular">
+        <div class="popular-badge">&#128293; Phổ biến nhất</div>
+        <div class="plan-icon">&#127775;</div>
+        <div class="plan-name" style="color:var(--purple-dark)">Agency</div>
+        <div class="plan-desc">Cho agency, team lớn và doanh nghiệp cần sản xuất nội dung quy mô lớn</div>
+        <div class="plan-price"><span class="price-amt" style="color:var(--purple)">$149</span><span class="price-period">/tháng</span></div>
+        <div class="price-annual">$1.430/năm &mdash; <strong>tiết kiệm $358</strong></div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> <strong>Không giới hạn</strong> bài viết</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> SERP + Competitor analysis</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> AI tạo đề cương đa ngôn ngữ</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> AI viết + tự động SEO</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> SEO + AEO + Schema auto</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> <strong>Không giới hạn</strong> WordPress</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Dự án + thành viên team</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Keyword tracking nâng cao</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> API access đầy đủ</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> White-label export</div>
+          <div class="feature-item included"><span class="feat-icon inc">&#10003;</span> Hỗ trợ 24/7 (chat + phone)</div>
+        </div>
+        <button class="plan-btn purple" onclick="alert('Nâng cấp lên Agency!')">&#9889; Nâng cấp Agency</button>
+      </div>
+    </div><!-- /plans-grid -->
+    <!-- COMPARISON TABLE -->
+    <div class="comparison-section">
+      <h2 class="comp-title">So sánh chi tiết tính năng</h2>
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th style="width:35%;text-align:left">Tính năng</th>
+            <th>Starter<br><span style="font-size:12px;color:#64748B">$19/tháng</span></th>
+            <th class="current-col">Pro &#9989;<br><span style="font-size:12px">$49/tháng</span></th>
+            <th class="highlight-col">Agency &#127775;<br><span style="font-size:12px">$149/tháng</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="cat-row"><td colspan="4">&#128196; Tạo nội dung</td></tr>
+          <tr><td>Số bài viết/tháng</td><td><span class="check-val">10</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-val" style="color:var(--blue)">30</span></td><td><span class="check-val" style="color:var(--purple)">Không giới hạn</span></td></tr>
+          <tr><td>Phân tích SERP Top 10</td><td><span class="check-y">&#10003;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+          <tr><td>AI tạo đề cương</td><td><span class="check-y">&#10003;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003; Nâng cao</span></td><td><span class="check-y">&#10003; Đa ngôn ngữ</span></td></tr>
+          <tr><td>AI viết nội dung đầy đủ</td><td><span class="check-y">&#10003;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003;</span></td><td><span class="check-y">&#10003; Auto</span></td></tr>
+          <tr><td>Phân tích SERP Insights</td><td><span class="check-n">&#10005;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003;</span></td><td><span class="check-y">&#10003; Đầy đủ</span></td></tr>
+
+          <tr class="cat-row"><td colspan="4">&#128200; SEO &amp; AEO</td></tr>
+          <tr><td>SEO Score realtime</td><td><span class="check-y">&#10003;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+          <tr><td>Kiểm tra 12 tiêu chí SEO</td><td><span class="check-val">6 tiêu chí</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003; 12 tiêu chí</span></td><td><span class="check-y">&#10003; 20+ tiêu chí</span></td></tr>
+          <tr><td>AEO Score (Answer Engine)</td><td><span class="check-n">&#10005;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+          <tr><td>Schema Markup tự động</td><td><span class="check-n">&#10005;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-n">&#10005;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+          <tr><td>Keyword tracking</td><td><span class="check-n">&#10005;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003; 100 từ</span></td><td><span class="check-y">&#10003; Không giới hạn</span></td></tr>
+
+          <tr class="cat-row"><td colspan="4">&#127758; Xuất &amp; Tích hợp</td></tr>
+          <tr><td>Xuất HTML/Markdown</td><td><span class="check-y">&#10003;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+          <tr><td>Kết nối WordPress</td><td><span class="check-val">1 site</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-val" style="color:var(--blue)">5 sites</span></td><td><span class="check-val" style="color:var(--purple)">Không giới hạn</span></td></tr>
+          <tr><td>API access</td><td><span class="check-n">&#10005;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-n">&#10005;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+          <tr><td>White-label export</td><td><span class="check-n">&#10005;</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-n">&#10005;</span></td><td><span class="check-y">&#10003;</span></td></tr>
+
+          <tr class="cat-row"><td colspan="4">&#128100; Quản lý &amp; Hỗ trợ</td></tr>
+          <tr><td>Dự án</td><td><span class="check-val">3 dự án</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-y">&#10003; Không giới hạn</span></td><td><span class="check-y">&#10003; Không giới hạn</span></td></tr>
+          <tr><td>Thành viên team</td><td><span class="check-val">1 người</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-val" style="color:var(--blue)">3 người</span></td><td><span class="check-val" style="color:var(--purple)">Không giới hạn</span></td></tr>
+          <tr><td>Hỗ trợ kỹ thuật</td><td><span class="check-val" style="font-size:12px">Email (48h)</span></td><td class="current-col" style="background:#EFF6FF"><span class="check-val" style="font-size:12px">Email ưu tiên (24h)</span></td><td><span class="check-val" style="font-size:12px;color:var(--purple)">24/7 Chat + Phone</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- FAQ + TRUST -->
+    <div style="max-width:1020px;margin:0 auto 48px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;box-shadow:var(--shadow-sm)">
+        <h3 style="font-family:var(--font-h);font-size:18px;font-weight:700;margin-bottom:16px">&#10067; Câu hỏi thường gặp</h3>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px">Tôi có thể đổi gói bất cứ lúc nào không?</div>
+            <div style="font-size:13px;color:var(--muted)">Có! Nâng cấp ngay lập tức, hạ cấp áp dụng từ kỳ thanh toán tiếp theo.</div>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px">Có bản dùng thử miễn phí không?</div>
+            <div style="font-size:13px;color:var(--muted)">Có! Dùng thử 7 ngày miễn phí cho tất cả gói. Không cần thẻ tín dụng.</div>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px">Bài viết chưa dùng hết có chuyển sang tháng sau không?</div>
+            <div style="font-size:13px;color:var(--muted)">Không. Số bài viết được làm mới vào đầu mỗi tháng.</div>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:14px;margin-bottom:4px">Hỗ trợ thanh toán bằng gì?</div>
+            <div style="font-size:13px;color:var(--muted)">Visa, Mastercard, PayPal và chuyển khoản ngân hàng Việt Nam.</div>
+          </div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--purple),#4338CA);border-radius:12px;padding:28px;color:white;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div style="font-size:32px;margin-bottom:12px">&#129302;</div>
+          <h3 style="font-family:var(--font-h);font-size:20px;font-weight:700;margin-bottom:10px">Bắt đầu ngay hôm nay</h3>
+          <p style="font-size:14px;color:rgba(255,255,255,.85);line-height:1.6;margin-bottom:20px">Tham gia cùng 2.400+ nhà làm SEO và content marketer đang dùng SEOPen để tạo nội dung chuẩn SEO nhanh hơn 10 lần.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.9)"><span style="color:#86EFAC">&#10003;</span> Không cần thẻ tín dụng</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.9)"><span style="color:#86EFAC">&#10003;</span> Dùng thử 7 ngày miễn phí</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.9)"><span style="color:#86EFAC">&#10003;</span> Hủy bất cứ lúc nào</div>
+          </div>
+        </div>
+        <button style="background:white;color:var(--purple-dark);border:none;border-radius:8px;padding:12px 20px;font-family:var(--font-h);font-size:15px;font-weight:700;cursor:pointer;transition:all 150ms">&#9889; Dùng thử miễn phí 7 ngày</button>
+      </div>
+    </div>
+
+    <!-- TRUST BADGES -->
+    <div style="max-width:1020px;margin:0 auto;text-align:center;padding-bottom:48px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Được tin dùng bởi 2.400+ người làm SEO tại Việt Nam</div>
+      <div style="display:flex;justify-content:center;gap:32px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px">&#128274; Bảo mật SSL 256-bit</div>
+        <div style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px">&#128176; Hỗ trợ VND &amp; USD</div>
+        <div style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px">&#9200; Uptime 99.9%</div>
+        <div style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px">&#127989;&#65039; Máy chủ tại Singapore</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+var annual = true;
+var prices = { starter: [19, 15], pro: [49, 39], agency: [149, 119] };
+document.getElementById('billingToggle').addEventListener('click', function() {
+  annual = !annual;
+  this.classList.toggle('on', annual);
+});
+</script>
+</body>
+</html>

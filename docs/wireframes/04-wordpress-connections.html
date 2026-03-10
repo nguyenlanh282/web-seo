@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEOPen - Kết Nối WordPress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=DM+Sans:ital,wght@0,400;0,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#3B82F6;--blue-dark:#2563EB;--blue-light:#EFF6FF;
+  --purple:#8B5CF6;--purple-dark:#6D28D9;--purple-light:#F5F3FF;
+  --green:#22C55E;--green-light:#F0FDF4;
+  --amber:#F59E0B;--amber-light:#FFFBEB;
+  --red:#EF4444;--red-light:#FEF2F2;
+  --bg:#F8FAFC;--surface:#FFFFFF;--border:#E2E8F0;
+  --text:#0F172A;--muted:#64748B;--disabled:#94A3B8;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.10),0 2px 4px -1px rgba(0,0,0,.06);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.10);
+  --font-h:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-b);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;display:flex;min-height:100vh}
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;box-shadow:var(--shadow-sm)}
+.sidebar-logo{padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:15px;font-family:var(--font-h)}
+.logo-text{font-family:var(--font-h);font-size:18px;font-weight:700}.logo-text span{color:var(--blue)}
+.sidebar-nav{flex:1;padding:12px 8px;display:flex;flex-direction:column;gap:2px}
+.nav-label{font-size:10px;font-weight:600;color:var(--disabled);text-transform:uppercase;letter-spacing:.08em;padding:8px 12px 4px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:var(--muted);cursor:pointer;transition:all 150ms;text-decoration:none}
+.nav-item:hover{background:var(--bg);color:var(--text)}.nav-item.active{background:var(--blue-light);color:var(--blue-dark);font-weight:600}
+.nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-bottom{padding:14px;border-top:1px solid var(--border)}
+.plan-card{background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border:1px solid #DDD6FE;border-radius:8px;padding:12px 14px}
+.plan-name{font-size:14px;font-weight:700;color:var(--purple-dark);font-family:var(--font-h)}
+.plan-credits{font-size:12px;color:var(--purple);margin-top:3px}
+.main-wrap{margin-left:240px;flex:1;display:flex;flex-direction:column}
+.header{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm)}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:14px;flex:1}
+.bc-item{color:var(--muted);text-decoration:none}.bc-active{color:var(--text);font-weight:500}.bc-sep{color:var(--disabled)}
+.hdr-actions{display:flex;align-items:center;gap:8px}
+.hdr-btn{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background 150ms}
+.hdr-btn:hover{background:var(--bg)}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--purple));color:white;font-size:12px;font-weight:700;font-family:var(--font-h);display:flex;align-items:center;justify-content:center}
+.page{flex:1;padding:28px 32px;max-width:1100px}
+.page-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px}
+.page-title{font-family:var(--font-h);font-size:24px;font-weight:700}
+.page-sub{font-size:14px;color:var(--muted);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:var(--font-b);transition:all 150ms}
+.btn-primary{background:var(--blue);color:white;box-shadow:var(--shadow-sm)}.btn-primary:hover{background:var(--blue-dark)}
+.btn-secondary{background:white;color:var(--text);border:1.5px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+.btn-danger{background:white;color:var(--red);border:1.5px solid var(--border)}.btn-danger:hover{background:var(--red-light);border-color:#FECACA}
+</style>
+</head>
+<style>
+/* WP CONNECTIONS */
+.wp-info-banner{background:linear-gradient(135deg,var(--blue-light),#F0F9FF);border:1px solid #BFDBFE;border-radius:12px;padding:20px 24px;margin-bottom:28px;display:flex;align-items:flex-start;gap:16px}
+.wp-info-icon{font-size:32px;flex-shrink:0}
+.wp-info-title{font-family:var(--font-h);font-size:15px;font-weight:700;color:#1D4ED8;margin-bottom:4px}
+.wp-info-text{font-size:13px;color:#1E40AF;line-height:1.6}
+.wp-info-steps{display:flex;gap:24px;margin-top:12px}
+.wp-step{display:flex;align-items:center;gap:6px;font-size:12px;color:#1D4ED8}
+.wp-step-num{width:20px;height:20px;border-radius:50%;background:#1D4ED8;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.connections-list{display:flex;flex-direction:column;gap:16px;margin-bottom:28px}
+.wp-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;box-shadow:var(--shadow-sm);transition:all 200ms}
+.wp-card:hover{box-shadow:var(--shadow-md);border-color:#CBD5E1}
+.wp-card-header{display:flex;align-items:center;gap:16px}
+.wp-site-icon{width:48px;height:48px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.wp-site-info{flex:1;min-width:0}
+.wp-site-name{font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--text)}
+.wp-site-url{font-size:13px;color:var(--blue);font-family:var(--font-mono);margin-top:2px}
+.wp-site-user{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:4px}
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:9999px;font-size:12px;font-weight:600;flex-shrink:0}
+.status-connected{background:var(--green-light);color:#15803D}
+.status-disconnected{background:var(--red-light);color:#B91C1C}
+.status-testing{background:var(--amber-light);color:#B45309}
+.wp-card-body{margin-top:16px;padding-top:16px;border-top:1px solid #F1F5F9;display:flex;align-items:center;gap:16px}
+.wp-meta-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.wp-meta-item strong{color:var(--text)}
+.wp-card-actions{margin-left:auto;display:flex;gap:8px}
+.wp-btn{padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:white;color:var(--text);transition:all 150ms;font-family:var(--font-b)}
+.wp-btn:hover{background:var(--bg);border-color:#CBD5E1}
+.wp-btn.blue{background:var(--blue-light);color:var(--blue-dark);border-color:#BFDBFE}.wp-btn.blue:hover{background:#DBEAFE}
+.wp-btn.danger{color:var(--red)}.wp-btn.danger:hover{background:var(--red-light);border-color:#FECACA}
+.wp-btn.green{background:var(--green-light);color:#15803D;border-color:#BBF7D0}.wp-btn.green:hover{background:#DCFCE7}
+/* ADD NEW CARD */
+.wp-add-card{background:var(--surface);border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all 200ms}
+.wp-add-card:hover{border-color:var(--blue);background:var(--blue-light)}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:520px;box-shadow:var(--shadow-lg);animation:modalIn .2s ease;overflow:hidden}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{padding:24px 28px 0;border-bottom:none}
+.modal-title{font-family:var(--font-h);font-size:20px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:14px;color:var(--muted)}
+.modal-body{padding:24px 28px}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.form-hint{font-size:12px;color:var(--muted);margin-top:4px}
+.input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-b);font-size:14px;color:var(--text);background:var(--surface);transition:border-color 150ms;outline:none}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.input-icon-wrap{position:relative}
+.input-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted)}
+.input-with-icon{padding-left:36px}
+.test-result{display:none;padding:12px 14px;border-radius:8px;font-size:13px;margin-top:8px}
+.test-ok{background:var(--green-light);color:#15803D;border:1px solid #BBF7D0}
+.test-err{background:var(--red-light);color:#B91C1C;border:1px solid #FECACA}
+.modal-footer{padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:var(--bg)}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px}
+.tab{padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all 150ms}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.tab:hover{color:var(--text)}
+</style>
+<body>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">S</div><span class="logo-text">SEO<span>Pen</span></span></div>
+  <nav class="sidebar-nav">
+    <span class="nav-label">Tổng quan</span>
+    <a class="nav-item" href="01-dashboard.html"><span class="nav-icon">&#9974;</span> Dashboard</a>
+    <a class="nav-item" href="02-article-editor.html"><span class="nav-icon">&#128196;</span> Bài viết</a>
+    <span class="nav-label">Quản lý</span>
+    <a class="nav-item" href="03-projects.html"><span class="nav-icon">&#128193;</span> Dự án</a>
+    <a class="nav-item" href="#"><span class="nav-icon">&#128269;</span> Từ khóa</a>
+    <a class="nav-item active" href="04-wordpress-connections.html"><span class="nav-icon">&#127758;</span> WordPress</a>
+    <span class="nav-label">Tài khoản</span>
+    <a class="nav-item" href="05-pricing.html"><span class="nav-icon">&#10024;</span> Nâng cấp</a>
+    <a class="nav-item" href="#"><span class="nav-icon">&#9881;&#65039;</span> Cài đặt</a>
+  </nav>
+  <div class="sidebar-bottom"><div class="plan-card"><div class="plan-name">&#9889; Pro Plan</div><div class="plan-credits">23 / 30 bài viết còn lại</div></div></div>
+</aside>
+
+<div class="main-wrap">
+  <header class="header">
+    <nav class="breadcrumb">
+      <a class="bc-item" href="01-dashboard.html">SEOPen</a>
+      <span class="bc-sep">&#8250;</span>
+      <span class="bc-active">Kết nối WordPress</span>
+    </nav>
+    <div class="hdr-actions">
+      <button class="hdr-btn">&#128269;</button>
+      <button class="hdr-btn">&#128276;</button>
+      <div class="avatar">NV</div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-hdr">
+      <div>
+        <h1 class="page-title">&#127758; Kết nối WordPress</h1>
+        <p class="page-sub">Xuất bài viết trực tiếp lên website WordPress của bạn bằng REST API</p>
+      </div>
+      <button class="btn btn-primary" onclick="document.getElementById('addWPModal').classList.add('show')">
+        <span style="font-size:16px">+</span> Kết nối WordPress mới
+      </button>
+    </div>
+
+    <!-- INFO BANNER -->
+    <div class="wp-info-banner">
+      <div class="wp-info-icon">&#128161;</div>
+      <div>
+        <div class="wp-info-title">Cách kết nối WordPress với SEOPen</div>
+        <div class="wp-info-text">Sử dụng Application Password có trong WordPress 5.6+ để kết nối an toàn. Không cần plugin nào.</div>
+        <div class="wp-info-steps">
+          <div class="wp-step"><div class="wp-step-num">1</div> Vào WP Admin &#8250; Users &#8250; Profile</div>
+          <div class="wp-step"><div class="wp-step-num">2</div> Tìm mục Application Passwords</div>
+          <div class="wp-step"><div class="wp-step-num">3</div> Tạo password mới và copy</div>
+          <div class="wp-step"><div class="wp-step-num">4</div> Dán vào form bên dưới</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTIONS LIST -->
+    <div style="font-family:var(--font-h);font-size:16px;font-weight:600;margin-bottom:16px">
+      Các trang đã kết nối (3)
+    </div>
+    <div class="connections-list">
+      <!-- WP SITE 1: CONNECTED -->
+      <div class="wp-card">
+        <div class="wp-card-header">
+          <div class="wp-site-icon">&#127758;</div>
+          <div class="wp-site-info">
+            <div class="wp-site-name">SEO Pro Blog</div>
+            <div class="wp-site-url">https://seopro.vn</div>
+            <div class="wp-site-user">&#128100; admin_seopro &#183; WordPress 6.4.2</div>
+          </div>
+          <span class="status-badge status-connected">&#9679; Đã kết nối</span>
+        </div>
+        <div class="wp-card-body">
+          <div class="wp-meta-item">&#128196; <span>Đã xuất: <strong>15 bài</strong></span></div>
+          <div class="wp-meta-item">&#128336; <span>Đồng bộ: <strong>02/03/2026 09:15</strong></span></div>
+          <div class="wp-meta-item">&#128200; <span>REST API: <strong style="color:#22C55E">Hoạt động</strong></span></div>
+          <div class="wp-meta-item">&#128274; <span>SSL: <strong style="color:#22C55E">Bảo mật</strong></span></div>
+          <div class="wp-card-actions">
+            <button class="wp-btn" onclick="testConnection('seopro.vn')">&#128200; Kiểm tra</button>
+            <button class="wp-btn blue">&#128228; Xuất bài</button>
+            <button class="wp-btn">&#9998; Sửa</button>
+            <button class="wp-btn danger">&#8722; Ngắt kết nối</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WP SITE 2: CONNECTED -->
+      <div class="wp-card">
+        <div class="wp-card-header">
+          <div class="wp-site-icon">&#128218;</div>
+          <div class="wp-site-info">
+            <div class="wp-site-name">Agency Blog</div>
+            <div class="wp-site-url">https://blog.agencyabc.vn</div>
+            <div class="wp-site-user">&#128100; content_manager &#183; WordPress 6.3.1</div>
+          </div>
+          <span class="status-badge status-connected">&#9679; Đã kết nối</span>
+        </div>
+        <div class="wp-card-body">
+          <div class="wp-meta-item">&#128196; <span>Đã xuất: <strong>7 bài</strong></span></div>
+          <div class="wp-meta-item">&#128336; <span>Đồng bộ: <strong>01/03/2026 14:30</strong></span></div>
+          <div class="wp-meta-item">&#128200; <span>REST API: <strong style="color:#22C55E">Hoạt động</strong></span></div>
+          <div class="wp-meta-item">&#128274; <span>SSL: <strong style="color:#22C55E">Bảo mật</strong></span></div>
+          <div class="wp-card-actions">
+            <button class="wp-btn">&#128200; Kiểm tra</button>
+            <button class="wp-btn blue">&#128228; Xuất bài</button>
+            <button class="wp-btn">&#9998; Sửa</button>
+            <button class="wp-btn danger">&#8722; Ngắt kết nối</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WP SITE 3: DISCONNECTED -->
+      <div class="wp-card" style="opacity:.75">
+        <div class="wp-card-header">
+          <div class="wp-site-icon" style="background:#FEF2F2">&#128683;</div>
+          <div class="wp-site-info">
+            <div class="wp-site-name">Tech Review Site</div>
+            <div class="wp-site-url">https://techreview.vn</div>
+            <div class="wp-site-user">&#128100; techreview_admin &#183; WordPress 6.2.0</div>
+          </div>
+          <span class="status-badge status-disconnected">&#9679; Mất kết nối</span>
+        </div>
+        <div class="wp-card-body">
+          <div class="wp-meta-item">&#128196; <span>Đã xuất: <strong>3 bài</strong></span></div>
+          <div class="wp-meta-item">&#128336; <span>Đồng bộ: <strong>15/01/2026 08:00</strong></span></div>
+          <div class="wp-meta-item">&#128200; <span>REST API: <strong style="color:#EF4444">Lỗi 401</strong></span></div>
+          <div style="flex:1;font-size:12px;color:#B91C1C;background:#FEF2F2;border-radius:6px;padding:6px 10px;border:1px solid #FECACA">
+            &#10060; Lỗi xác thực — Application Password đã hết hạn. Vui lòng tạo mật khẩu mới.
+          </div>
+          <div class="wp-card-actions">
+            <button class="wp-btn green">&#128260; Kết nối lại</button>
+            <button class="wp-btn">&#9998; Sửa</button>
+            <button class="wp-btn danger">&#128465; Xóa</button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /connections-list -->
+
+    <!-- ADD NEW -->
+    <div class="wp-add-card" onclick="document.getElementById('addWPModal').classList.add('show')">
+      <div style="font-size:36px;margin-bottom:8px">+</div>
+      <div style="font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--muted)">Kết nối trang WordPress mới</div>
+      <div style="font-size:13px;color:var(--disabled);margin-top:4px">Nhấn để thêm website WordPress</div>
+    </div>
+
+  </main>
+</div>
+<!-- ADD WP MODAL -->
+<div class="modal-overlay" id="addWPModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">&#127758; Kết nối WordPress mới</div>
+      <div class="modal-sub">Nhập thông tin website WordPress để bắt đầu kết nối</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">URL Website *</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">&#127758;</span>
+          <input class="input input-with-icon" type="url" placeholder="https://your-website.vn" id="wp-url">
+        </div>
+        <div class="form-hint">Nhập đầy đủ URL bao gồm https:// (không kèm /wp-admin)</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tên đăng nhập WordPress *</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">&#128100;</span>
+          <input class="input input-with-icon" type="text" placeholder="admin, editor..." id="wp-user">
+        </div>
+        <div class="form-hint">Tài khoản cần có quyền Editor hoặc Administrator</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Application Password *</label>
+        <div class="input-icon-wrap">
+          <span class="input-icon">&#128273;</span>
+          <input class="input input-with-icon" type="password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" id="wp-pass" style="font-family:var(--font-mono);letter-spacing:.05em">
+        </div>
+        <div class="form-hint">
+          Tạo trong WordPress: <strong>Users &gt; Profile &gt; Application Passwords</strong>
+          <br>Định dạng: "AbCd EfGh IjKl MnOp QrSt UvWx"
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tên hiển thị</label>
+        <input class="input" type="text" placeholder="Ví dụ: Blog Marketing Chính" id="wp-name">
+        <div class="form-hint">Tên để nhận biết website này trong SEOPen</div>
+      </div>
+      <button class="btn" style="background:var(--bg);color:var(--text);border:1.5px solid var(--border);font-size:13px;padding:9px 16px" onclick="testConnectionModal()">
+        &#128200; Kiểm tra kết nối
+      </button>
+      <div class="test-result test-ok" id="testOk">
+        &#9989; <strong>Kết nối thành công!</strong> WordPress 6.4.2, REST API hoạt động bình thường.
+      </div>
+      <div class="test-result test-err" id="testErr">
+        &#10060; <strong>Lỗi kết nối.</strong> Kiểm tra lại URL và Application Password.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('addWPModal').classList.remove('show')">Hủy</button>
+      <button class="btn" style="background:var(--bg);border:1.5px solid var(--border);color:var(--text)">&#128200; Kiểm tra</button>
+      <button class="btn btn-primary">&#127758; Kết nối ngay</button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('addWPModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('show');
+});
+function testConnectionModal() {
+  var url = document.getElementById('wp-url').value;
+  var user = document.getElementById('wp-user').value;
+  var pass = document.getElementById('wp-pass').value;
+  document.getElementById('testOk').style.display = 'none';
+  document.getElementById('testErr').style.display = 'none';
+  if (url && user && pass) {
+    setTimeout(function() {
+      document.getElementById('testOk').style.display = 'block';
+    }, 1500);
+  } else {
+    document.getElementById('testErr').style.display = 'block';
+  }
+}
+function testConnection(site) { alert('Đang kiểm tra kết nối với ' + site + '...'); }
+</script>
+</body>
+</html>
