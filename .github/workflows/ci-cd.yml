@@ -1,0 +1,202 @@
+# =============================================================================
+# SEOPen — CI/CD Pipeline
+#
+# CI  : Lint + Typecheck  →  every push & pull_request
+# CD  : Build → Push GHCR → Deploy VPS  →  push to master/main only
+#
+# Required GitHub Secrets (Settings → Secrets and variables → Actions):
+#   SSH_HOST          VPS IP or hostname
+#   SSH_USER          SSH username (e.g. ubuntu, deploy)
+#   SSH_PRIVATE_KEY   Private key matching the authorised key on VPS
+#   SSH_PORT          SSH port (optional, defaults to 22)
+#   DEPLOY_PATH       Absolute path on VPS where docker-compose.yml lives
+#                     e.g. /opt/seopen
+#   GHCR_PAT          GitHub PAT with read:packages scope — used by VPS to pull images
+#
+# Required GitHub Variables (Settings → Secrets and variables → Variables):
+#   NEXT_PUBLIC_API_URL          e.g. https://api.example.com   (baked into Next.js bundle)
+#   NEXT_PUBLIC_POSTHOG_KEY      optional
+#   NEXT_PUBLIC_SENTRY_DSN       optional
+# =============================================================================
+
+name: CI/CD
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1 — CI: lint + typecheck (runs on every push & PR)
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  ci:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build @seopen/shared
+        run: npm run build --workspace=packages/shared
+
+      - name: Typecheck — API
+        run: npm run typecheck --workspace=apps/api
+
+      - name: Typecheck — Web
+        run: npm run typecheck --workspace=apps/web
+
+      - name: Lint — API
+        run: npm run lint --workspace=apps/api
+
+      - name: Lint — Web
+        run: npm run lint --workspace=apps/web
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 2 — Build & Push Docker images to GHCR (push to master/main only)
+# Runs API and Web builds in parallel via matrix.
+# ─────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build & Push — ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: ci
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write   # needed to push to ghcr.io
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - app: api
+            dockerfile: apps/api/Dockerfile
+            image: seopen-api
+          - app: web
+            dockerfile: apps/web/Dockerfile
+            image: seopen-web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            # short-sha tag  e.g. sha-a1b2c3d
+            type=sha,prefix=sha-,format=short
+            # always keep :latest pointing to master/main
+            type=raw,value=latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.app }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          dockerfile: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GitHub Actions cache — dramatically speeds up repeated builds
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          # NEXT_PUBLIC_* vars must be baked in at build time
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_POSTHOG_KEY=${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 3 — Deploy to VPS via SSH (runs after both images are pushed)
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    environment: production   # shows deploy status on GitHub; add protection rules here
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          # Pass env vars to the remote script (values are masked in logs)
+          envs: GITHUB_SHA,GITHUB_ACTOR,GITHUB_REPOSITORY_OWNER,GHCR_PAT,DEPLOY_PATH
+          script: |
+            set -euo pipefail
+
+            DEPLOY_TAG="sha-$(echo "$GITHUB_SHA" | cut -c1-7)"
+            GHCR_OWNER="$GITHUB_REPOSITORY_OWNER"
+            TARGET="${DEPLOY_PATH:-/opt/seopen}"
+
+            echo "── Deploying $DEPLOY_TAG to $TARGET ──"
+            cd "$TARGET"
+
+            # Authenticate VPS to GHCR (read:packages PAT — rotatable separately)
+            echo "$GHCR_PAT" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+            # Pull new images before stopping old ones (minimises downtime)
+            DEPLOY_TAG="$DEPLOY_TAG" GHCR_OWNER="$GHCR_OWNER" \
+              docker compose pull api web
+
+            # Restart with new images
+            # entrypoint runs `prisma migrate deploy` automatically before starting
+            DEPLOY_TAG="$DEPLOY_TAG" GHCR_OWNER="$GHCR_OWNER" \
+              docker compose up -d --remove-orphans api web
+
+            # Wait for API health check to pass (max 60s)
+            echo "Waiting for API health..."
+            for i in $(seq 1 12); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' seopen_api 2>/dev/null || echo "starting")
+              if [ "$STATUS" = "healthy" ]; then
+                echo "✅ API is healthy"
+                break
+              fi
+              echo "  [$i/12] $STATUS — waiting 5s..."
+              sleep 5
+            done
+
+            # Show running containers
+            docker compose ps
+
+            # Remove dangling images to keep disk clean
+            docker image prune -f
+
+            echo "🚀 Deployed $DEPLOY_TAG successfully"

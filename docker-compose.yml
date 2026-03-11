@@ -49,7 +49,9 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    image: seopen_api:latest
+    # GHCR image used by CD pipeline — overridden via DEPLOY_TAG + GHCR_OWNER env vars
+    # Local dev: image name is irrelevant (docker compose build always builds from source)
+    image: ghcr.io/${GHCR_OWNER:-nguyenlanh282}/seopen-api:${DEPLOY_TAG:-latest}
     container_name: seopen_api
     restart: unless-stopped
     environment:
@@ -92,7 +94,8 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
-    image: seopen_web:latest
+    # GHCR image used by CD pipeline
+    image: ghcr.io/${GHCR_OWNER:-nguyenlanh282}/seopen-web:${DEPLOY_TAG:-latest}
     container_name: seopen_web
     restart: unless-stopped
     environment:
