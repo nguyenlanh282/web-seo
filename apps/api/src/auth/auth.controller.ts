@@ -39,7 +39,8 @@ export class AuthController {
     const result = await this.authService.register(dto)
     this.setRefreshTokenCookie(res, result.refreshToken)
     this.setAccessTokenCookie(res, result.accessToken)
-    const { refreshToken: _, ...response } = result
+    // Strip both tokens from response body — they are delivered via HttpOnly cookies only
+    const { refreshToken: _r, accessToken: _a, ...response } = result
     return response
   }
 
@@ -51,7 +52,8 @@ export class AuthController {
     const result = await this.authService.login(req.user.id, req.user.email)
     this.setRefreshTokenCookie(res, result.refreshToken)
     this.setAccessTokenCookie(res, result.accessToken)
-    const { refreshToken: _, ...response } = result
+    // Strip both tokens from response body — they are delivered via HttpOnly cookies only
+    const { refreshToken: _r, accessToken: _a, ...response } = result
     return response
   }
 
@@ -79,11 +81,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Google OAuth callback' })
   async googleCallback(@Request() req: any, @Res() res: Response) {
     const result = await this.authService.login(req.user.id, req.user.email)
+    // Set both tokens as HttpOnly cookies — never expose in URL
     this.setRefreshTokenCookie(res, result.refreshToken)
-
-    // Redirect to frontend with access token
+    this.setAccessTokenCookie(res, result.accessToken)
     const frontendUrl = this.config.get('FRONTEND_URL', 'http://localhost:3000')
-    res.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`)
+    // No token in URL: frontend calls /auth/me after redirect to re-hydrate session
+    res.redirect(`${frontendUrl}/auth/callback`)
   }
 
   // ---------------------------------------------------------------------------
@@ -95,13 +98,9 @@ export class AuthController {
   @ApiCookieAuth('refresh_token')
   @ApiOperation({ summary: 'Exchange a refresh token for a new access token' })
   async refresh(@Request() req: any, @Res({ passthrough: true }) res: Response) {
-    // Accept token from HttpOnly cookie first, fall back to Authorization header
-    const tokenFromCookie: string | undefined = req.cookies?.refresh_token
-    const authHeader: string | undefined = req.headers?.authorization
-    const tokenFromHeader =
-      authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
-
-    const incomingRefreshToken = tokenFromCookie ?? tokenFromHeader
+    // Only accept refresh token from HttpOnly cookie — never from Authorization header
+    // (header fallback would re-expose token to JS and defeat the XSS protection)
+    const incomingRefreshToken: string | undefined = req.cookies?.refresh_token
 
     if (!incomingRefreshToken) {
       throw new UnauthorizedException('No refresh token provided')
@@ -120,8 +119,10 @@ export class AuthController {
 
     const tokens = await this.authService.refreshToken(payload.sub, incomingRefreshToken)
     this.setRefreshTokenCookie(res, tokens.refreshToken)
+    // Set new access token as HttpOnly cookie — not in response body
+    this.setAccessTokenCookie(res, tokens.accessToken)
 
-    return { accessToken: tokens.accessToken }
+    return { ok: true }
   }
 
   // ---------------------------------------------------------------------------
@@ -135,8 +136,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout — clears refresh token from DB and cookie' })
   async logout(@GetUser('id') userId: string, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(userId)
-    res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'lax', secure: false })
-    res.clearCookie('access_token', { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production' })
+    res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/' })
+    res.clearCookie('access_token', { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', path: '/' })
     return { message: 'Logged out successfully' }
   }
 
@@ -160,6 +161,7 @@ export class AuthController {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
+      path: '/',
     })
   }
 }

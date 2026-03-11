@@ -1,31 +1,18 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger'
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator'
 import { ArticlesService } from './articles.service'
 import { InternalLinkService } from './internal-link.service'
 import { CreateArticleDto } from './dto/create-article.dto'
 import { UpdateArticleDto } from './dto/update-article.dto'
 import { Step2Dto, Step3Dto } from './dto/step2.dto'
 import { AIActionDto } from './dto/ai-action.dto'
+import { PublishWpDto, RetryPublishDto } from './dto/publish-wp.dto'
 import { ArticleStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RateLimitGuard } from '../common/guards/rate-limit.guard'
 import { PlanGuard } from '../common/guards/plan.guard'
 import { RateLimit } from '../common/decorators/rate-limit.decorator'
 import { PlanCheck } from '../common/decorators/plan-check.decorator'
-
-class PublishWpDto {
-  @IsString()
-  @IsNotEmpty()
-  wpSiteId: string
-}
-
-class RetryPublishDto {
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  wpSiteId?: string
-}
 
 @ApiTags('articles')
 @ApiBearerAuth()
@@ -160,6 +147,8 @@ export class ArticlesController {
   // Step 5b: Async WordPress Publish
   @Post(':id/publish-wp')
   @ApiOperation({ summary: 'Async publish article to WordPress via BullMQ (Step 5b)' })
+  @PlanCheck('wp_publish')
+  @UseGuards(PlanGuard)
   @RateLimit({ limit: 3, window: 3600, scope: 'publish-wp' })
   @UseGuards(RateLimitGuard)
   publishToWordPress(

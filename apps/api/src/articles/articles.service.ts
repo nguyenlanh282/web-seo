@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { InjectQueue } from '@nestjs/bull'
 import { Queue } from 'bull'
+import * as sanitizeHtml from 'sanitize-html'
 import { PrismaService } from '../prisma/prisma.service'
 import { RedisService } from '../redis/redis.service'
 import { AnthropicService } from '../ai/anthropic.service'
@@ -292,26 +293,35 @@ export class ArticlesService {
       )
     }
 
-    // Guard against double-enqueue (lock exists = already publishing)
+    // Guard against double-enqueue: acquire lock NOW before adding to queue.
+    // The lock token is passed into the job so the worker can release it in its finally block.
+    // Using try/finally ensures the lock is released if enqueue itself throws.
     const lockKey = REDIS_KEYS.PUBLISH_LOCK(articleId)
-    const locked = await this.redis.get(lockKey)
-    if (locked) {
+    const lockToken = await this.redis.acquireLock(lockKey, 150) // 150s TTL matches worker
+    if (!lockToken) {
       throw new ConflictException('A WordPress publish job is already in progress for this article')
     }
 
-    const job = await this.wpPublishQueue.add(
-      'publish',
-      { articleId, userId, wpSiteId },
-      {
-        attempts: 2,
-        backoff: { type: 'fixed', delay: 5000 },
-        removeOnComplete: 50,
-        removeOnFail: 100,
-        timeout: 120000, // 2 min hard timeout
-      },
-    )
+    try {
+      const job = await this.wpPublishQueue.add(
+        'publish',
+        { articleId, userId, wpSiteId, lockToken },
+        {
+          attempts: 2,
+          backoff: { type: 'fixed', delay: 5000 },
+          removeOnComplete: 50,
+          removeOnFail: 100,
+          timeout: 120000, // 2 min hard timeout
+        },
+      )
 
-    return { jobId: job.id!.toString() }
+      return { jobId: job.id!.toString() }
+    } catch (err) {
+      // Enqueue failed — release the lock immediately so the user can retry
+      await this.redis.releaseLock(lockKey, lockToken)
+      throw err
+    }
+    // Note: lock is NOT released here on success — the worker releases it in its finally block
   }
 
   // ========== Retry Publish ==========
@@ -347,26 +357,31 @@ export class ArticlesService {
       )
     }
 
-    // Guard against duplicate in-flight job
+    // Guard against duplicate in-flight job — acquire lock before enqueue
     const lockKey = REDIS_KEYS.PUBLISH_LOCK(articleId)
-    const locked = await this.redis.get(lockKey)
-    if (locked) {
+    const lockToken = await this.redis.acquireLock(lockKey, 150)
+    if (!lockToken) {
       throw new ConflictException('A WordPress publish job is already in progress for this article')
     }
 
-    const job = await this.wpPublishQueue.add(
-      'publish',
-      { articleId, userId, wpSiteId: resolvedSiteId },
-      {
-        attempts: 2,
-        backoff: { type: 'fixed', delay: 5000 },
-        removeOnComplete: 50,
-        removeOnFail: 100,
-        timeout: 120000,
-      },
-    )
+    try {
+      const job = await this.wpPublishQueue.add(
+        'publish',
+        { articleId, userId, wpSiteId: resolvedSiteId, lockToken },
+        {
+          attempts: 2,
+          backoff: { type: 'fixed', delay: 5000 },
+          removeOnComplete: 50,
+          removeOnFail: 100,
+          timeout: 120000,
+        },
+      )
 
-    return { jobId: job.id!.toString(), retried: true }
+      return { jobId: job.id!.toString(), retried: true }
+    } catch (err) {
+      await this.redis.releaseLock(lockKey, lockToken)
+      throw err
+    }
   }
 
   /** Escape plain text for safe injection into HTML text nodes */
@@ -379,23 +394,46 @@ export class ArticlesService {
       .replace(/'/g, '&#x27;')
   }
 
-  /** Strip dangerous tags and attributes from HTML content */
+  /** Strip dangerous tags and attributes from HTML content using sanitize-html allowlist.
+   * Replaces the fragile regex-based approach — immune to nested tags, null bytes,
+   * CSS expressions, and javascript: URI bypass variants. */
   private sanitizeHtmlContent(html: string): string {
-    return html
-      // Remove dangerous block-level tags and their content
-      .replace(/<(script|iframe|object|embed|form|applet)[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<(script|iframe|object|embed|form|applet)[^>]*\/?>/gi, '')
-      // Remove meta/base redirects
-      .replace(/<meta[^>]+http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, '')
-      .replace(/<base[^>]*>/gi, '')
-      // Strip inline event handlers (quoted and unquoted)
-      .replace(/\s+on\w+\s*=\s*(['"])[^'"]*\1/gi, '')
-      .replace(/\s+on\w+\s*=\s*[^\s>]+/gi, '')
-      // Strip javascript: and data: URIs in href/src/action
-      .replace(/(href|src|action)\s*=\s*(['"])\s*(javascript|data|vbscript):[^'"]*\2/gi, '$1="#"')
-      .replace(/(href|src|action)\s*=\s*(javascript|data|vbscript):[^\s>]*/gi, '$1="#"')
-      // Strip style expressions
-      .replace(/style\s*=\s*(['"])[^'"]*expression\s*\([^'"]*\1/gi, '')
+    return sanitizeHtml(html, {
+      allowedTags: [
+        // Structure
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'p', 'br', 'hr', 'blockquote', 'pre', 'code',
+        // Lists
+        'ul', 'ol', 'li',
+        // Inline
+        'strong', 'b', 'em', 'i', 'u', 's', 'del', 'ins', 'mark', 'small', 'sub', 'sup',
+        // Links & media
+        'a', 'img',
+        // Tables
+        'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+        // Misc
+        'div', 'span', 'figure', 'figcaption',
+      ],
+      allowedAttributes: {
+        'a': ['href', 'title', 'target', 'rel'],
+        'img': ['src', 'alt', 'title', 'width', 'height'],
+        'td': ['colspan', 'rowspan'],
+        'th': ['colspan', 'rowspan', 'scope'],
+        '*': ['class', 'id'],
+      },
+      allowedSchemes: ['http', 'https', 'mailto'],
+      allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+      // Force rel="noopener noreferrer" on external links
+      transformTags: {
+        'a': (_tagName, attribs) => ({
+          tagName: 'a',
+          attribs: {
+            ...attribs,
+            rel: 'noopener noreferrer',
+          },
+        }),
+      },
+    })
   }
 
   private buildExportHtml(article: any): string {

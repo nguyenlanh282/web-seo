@@ -14,6 +14,8 @@ Sentry.init({
   environment: process.env.NODE_ENV || 'development',
   // Only enable Sentry if DSN is provided (avoids noise in local dev)
   enabled: !!process.env.SENTRY_DSN,
+  // Explicit sample rate prevents inadvertently capturing 100% of transactions in prod
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 })
 
 async function bootstrap() {

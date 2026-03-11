@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common'
 import Redis from 'ioredis'
+import { randomUUID } from 'crypto'
 
 @Injectable()
 export class RedisService extends Redis implements OnModuleInit, OnModuleDestroy {
@@ -59,13 +60,24 @@ export class RedisService extends Redis implements OnModuleInit, OnModuleDestroy
     return result === 'OK'
   }
 
-  // Acquire distributed lock
-  async acquireLock(key: string, ttlSeconds: number): Promise<boolean> {
-    const result = await this.set(key, '1', 'EX', ttlSeconds, 'NX')
-    return result === 'OK'
+  // Acquire distributed lock — returns lock token on success, null on failure.
+  // Caller MUST store the token and pass it to releaseLock to prevent ghost releases.
+  async acquireLock(key: string, ttlSeconds: number): Promise<string | null> {
+    const token = randomUUID()
+    const result = await this.set(key, token, 'EX', ttlSeconds, 'NX')
+    return result === 'OK' ? token : null
   }
 
-  async releaseLock(key: string): Promise<void> {
-    await this.del(key)
+  // Release lock only if the stored token matches (atomic Lua — prevents ghost release
+  // when TTL expired and another holder acquired the lock before releaseLock is called).
+  async releaseLock(key: string, token: string): Promise<void> {
+    const lua = `
+      if redis.call('get', KEYS[1]) == ARGV[1] then
+        return redis.call('del', KEYS[1])
+      else
+        return 0
+      end
+    `
+    await this.eval(lua, 1, key, token)
   }
 }

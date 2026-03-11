@@ -57,16 +57,18 @@ export class SseService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Validates a one-time SSE ticket. Deletes it on first use (one-time).
+   * Validates a one-time SSE ticket atomically using GETDEL (Redis ≥6.2).
+   * Atomic consume prevents TOCTOU race: two concurrent requests with the
+   * same ticket cannot both succeed.
    * Throws UnauthorizedException if absent or expired.
    */
   async validateTicket(ticket: string): Promise<string> {
     const key = `sse:ticket:${ticket}`
-    const userId = await this.redis.get(key)
+    // GETDEL is atomic — GET + DEL in a single round-trip, no race condition
+    const userId = await this.redis.getdel(key)
     if (!userId) {
       throw new UnauthorizedException('Invalid or expired SSE ticket')
     }
-    await this.redis.del(key)
     return userId
   }
 

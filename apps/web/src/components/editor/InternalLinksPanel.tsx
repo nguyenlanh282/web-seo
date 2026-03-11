@@ -115,7 +115,10 @@ export default function InternalLinksPanel({
         </div>
 
         {suggestions.map((s) => {
-          const path = s.slug ? `/${s.slug}` : `/articles/${s.articleId}`
+          // Only use slug-based paths — never expose internal UUIDs in copied HTML.
+          // Articles without a slug produce broken public links anyway.
+          const hasSlug = !!s.slug
+          const path = hasSlug ? `/${s.slug}` : null
 
           return (
             <Card key={s.articleId} className="overflow-hidden">
@@ -128,46 +131,54 @@ export default function InternalLinksPanel({
                   <p className="truncate text-sm font-medium text-slate-800" title={s.title}>
                     {s.title}
                   </p>
-                  <p className="truncate text-xs text-slate-400">
-                    Anchor:{' '}
-                    <code className="rounded bg-slate-100 px-1">{s.anchorText}</code>
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex shrink-0 items-center gap-1">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 text-xs"
-                        onClick={() => {
-                          // Escape to prevent XSS when user pastes into WP HTML editor
-                          const link = `<a href="${escapeHtml(path)}">${escapeHtml(s.anchorText)}</a>`
-                          navigator.clipboard.writeText(link)
-                          toast.success('Đã copy HTML link')
-                        }}
-                      >
-                        Copy
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Copy HTML anchor tag
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {onInsert && (
-                    <Button
-                      size="sm"
-                      className="h-8 px-2 text-xs"
-                      onClick={() => onInsert(escapeHtml(s.anchorText), escapeHtml(path))}
-                    >
-                      <Link2 className="mr-1 h-3.5 w-3.5" />
-                      Chèn
-                    </Button>
+                  {hasSlug ? (
+                    <p className="truncate text-xs text-slate-400">
+                      Anchor:{' '}
+                      <code className="rounded bg-slate-100 px-1">{s.anchorText}</code>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-amber-600">Chưa có slug — thêm slug để link</p>
                   )}
                 </div>
+
+                {/* Actions — only available when a slug exists */}
+                {hasSlug && path && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => {
+                            // Escape to prevent XSS when user pastes into WP HTML editor
+                            const link = `<a href="${escapeHtml(path)}">${escapeHtml(s.anchorText)}</a>`
+                            navigator.clipboard.writeText(link)
+                            toast.success('Đã copy HTML link')
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Copy HTML anchor tag
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {onInsert && (
+                      <Button
+                        size="sm"
+                        className="h-8 px-2 text-xs"
+                        // Pass RAW strings to the rich-text editor — escaping is the editor's job.
+                        // escapeHtml is only for the clipboard Copy path (raw HTML string).
+                        onClick={() => onInsert(s.anchorText, path)}
+                      >
+                        <Link2 className="mr-1 h-3.5 w-3.5" />
+                        Chèn
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )

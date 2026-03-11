@@ -663,6 +663,7 @@ function ContentPanel({
 }) {
   const [progress, setProgress] = useState(0);
   const [statusMsg, setStatusMsg] = useState('');
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   const mutation = useMutation({
     mutationFn: () => articlesApi.step3(articleId),
@@ -690,6 +691,8 @@ function ContentPanel({
     jobsApi.createEventSource(articleId).then((es) => {
       if (cancelled) { es.close(); return; }
 
+      eventSourceRef.current = es;
+
       es.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -703,6 +706,7 @@ function ContentPanel({
 
     return () => {
       cancelled = true;
+      eventSourceRef.current?.close();
     };
   }, [mutation.isPending, articleId]);
 

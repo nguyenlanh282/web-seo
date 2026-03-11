@@ -79,6 +79,22 @@ export class PlanGuard implements CanActivate {
         }
         break
       }
+
+      case 'wp_publish': {
+        // STARTER plan is html_only — WP publish not allowed
+        if (limits.wpExport === 'html_only') {
+          throw new ForbiddenException({
+            success: false,
+            error: {
+              code: 'WP_PUBLISH_NOT_ALLOWED',
+              message: `Gói ${plan} không hỗ trợ đăng trực tiếp lên WordPress. Nâng cấp lên PRO để sử dụng tính năng này.`,
+              upgradeUrl: '/pricing',
+              plan,
+            },
+          })
+        }
+        break
+      }
     }
 
     return true

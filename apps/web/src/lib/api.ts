@@ -76,6 +76,7 @@ type PlanErrorHandler = (error: {
   message: string
   upgradeUrl?: string
   retryAfter?: number
+  scope?: string
 }) => void
 
 let _planErrorHandler: PlanErrorHandler | null = null
@@ -98,6 +99,7 @@ api.interceptors.response.use(
         message: errorData.message,
         upgradeUrl: errorData.upgradeUrl,
         retryAfter: errorData.retryAfter,
+        scope: errorData.scope,
       })
     }
 

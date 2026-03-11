@@ -1,6 +1,13 @@
-version: '3.9'
+# =============================================================================
+# SEOPen — Production Docker Compose
+# Usage: docker compose up -d
+# Required env: see .env.example at repo root
+# =============================================================================
 
 services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
   postgres:
     image: postgres:16-alpine
     container_name: seopen_postgres
@@ -8,40 +15,59 @@ services:
     environment:
       POSTGRES_DB: seopen
       POSTGRES_USER: seopen
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seopen_secret}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - seopen_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U seopen"]
+      test: ["CMD-SHELL", "pg_isready -U seopen -d seopen"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   redis:
     image: redis:7-alpine
     container_name: seopen_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secret}
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    networks:
+      - seopen_net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
+
+  # ── Application ─────────────────────────────────────────────────────────────
 
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: seopen_api:latest
     container_name: seopen_api
     restart: unless-stopped
-    env_file:
-      - ./apps/api/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://seopen:${POSTGRES_PASSWORD}@postgres:5432/seopen
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      SERP_API_KEY: ${SERP_API_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "4000:4000"
     depends_on:
@@ -49,36 +75,43 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - seopen_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health | grep -q 'ok' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+    image: seopen_web:latest
     container_name: seopen_web
     restart: unless-stopped
-    env_file:
-      - ./apps/web/.env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      API_URL: http://api:4000
     ports:
       - "3000:3000"
     depends_on:
-      - api
-    volumes:
-      - ./apps/web:/app
-      - /app/node_modules
-
-  migration:
-    build:
-      context: ./apps/api
-      dockerfile: Dockerfile
-    container_name: seopen_migration
-    command: npx prisma migrate deploy
-    env_file:
-      - ./apps/api/.env
-    depends_on:
-      postgres:
+      api:
         condition: service_healthy
-    profiles:
-      - migration
+    networks:
+      - seopen_net
+
+networks:
+  seopen_net:
+    driver: bridge
 
 volumes:
   postgres_data:

@@ -49,9 +49,10 @@ export function PlanErrorProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onPlanError((error) => {
       if (error.code === 'RATE_LIMIT_EXCEEDED') {
         const retryAfter = error.retryAfter ?? 60
-        track('rate_limit_hit', { retryAfter })
-        // Use a stable toast ID per scope so repeated hits update the same toast
-        const toastId = `rate-limit-${error.code}`
+        track('rate_limit_hit', { retryAfter, scope: error.scope })
+        // Use scope in toast ID so simultaneous rate-limits on different endpoints
+        // don't overwrite each other's countdown
+        const toastId = `rate-limit-${error.scope ?? error.code}`
         toast.error(`Quá giới hạn — thử lại sau ${retryAfter}s`, {
           id: toastId,
           duration: retryAfter * 1000,
@@ -60,7 +61,8 @@ export function PlanErrorProvider({ children }: { children: React.ReactNode }) {
       } else if (
         error.code === 'CREDIT_EXHAUSTED' ||
         error.code === 'PROJECT_LIMIT_REACHED' ||
-        error.code === 'WP_SITE_LIMIT_REACHED'
+        error.code === 'WP_SITE_LIMIT_REACHED' ||
+        error.code === 'WP_PUBLISH_NOT_ALLOWED'
       ) {
         track('plan_limit_hit', { code: error.code, plan: user?.plan ?? 'UNKNOWN' })
         track('upgrade_modal_opened', { reason: error.message, currentPlan: user?.plan })

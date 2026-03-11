@@ -1,23 +1,11 @@
 #!/bin/bash
 set -e
 
-# Wait for PostgreSQL
-echo "Waiting for PostgreSQL to be ready..."
-until npx prisma db push --accept-data-loss 2>/dev/null; do
-  echo "PostgreSQL is not ready yet - waiting..."
-  sleep 2
-done
+# docker-compose depends_on with healthcheck ensures PostgreSQL is ready
+# before this container starts — no polling loop needed.
 
-# Run migrations
-echo "Running Prisma migrations..."
+echo "▶ Running database migrations..."
 npx prisma migrate deploy
 
-# Run seed if not exists
-if [ "$NODE_ENV" != "production" ]; then
-  echo "Running seed script..."
-  npx prisma db seed
-fi
-
-# Start the app
-echo "Starting API server..."
+echo "▶ Starting API server..."
 exec "$@"

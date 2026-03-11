@@ -57,6 +57,7 @@ export class RateLimitGuard implements CanActivate {
             retryAfter: window,
             limit: effectiveLimit,
             window,
+            scope,  // include scope so frontend can distinguish simultaneous rate-limits
           },
         },
         HttpStatus.TOO_MANY_REQUESTS,

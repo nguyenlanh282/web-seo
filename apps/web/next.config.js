@@ -2,6 +2,7 @@
 const { withSentryConfig } = require('@sentry/nextjs')
 
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   transpilePackages: ['@seopen/shared'],
   images: {

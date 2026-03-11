@@ -2,12 +2,14 @@ import { Process, Processor } from '@nestjs/bull'
 import { Job } from 'bull'
 import { Logger } from '@nestjs/common'
 import axios from 'axios'
+import * as sanitizeHtml from 'sanitize-html'
 import { PrismaService } from '../prisma/prisma.service'
 import { RedisService } from '../redis/redis.service'
 import { SseService } from '../jobs/sse.service'
 import { ArticleStatus, ExportType, ExportStatus } from '@prisma/client'
 import { QUEUE_NAMES, REDIS_KEYS, MIN_SEO_SCORE_FOR_PUBLISH } from '@seopen/shared'
 import { decrypt } from '../common/utils/crypto'
+import { validateWpUrl } from '../common/utils/ssrf'
 
 /** Thrown after a PARTIAL record has been written — outer catch must not write FAILED */
 class WpPartialError extends Error {
@@ -21,6 +23,7 @@ export interface WpPublishJobData {
   articleId: string
   userId: string
   wpSiteId: string
+  lockToken: string  // acquired by service before enqueue; worker releases in finally
 }
 
 // Lock TTL must exceed job timeout + processing buffer to prevent ghost re-enqueue
@@ -38,16 +41,13 @@ export class WpPublishProcessor {
 
   @Process('publish')
   async handlePublish(job: Job<WpPublishJobData>): Promise<{ wpPostId: number; wpPostUrl: string }> {
-    const { articleId, userId, wpSiteId } = job.data
+    const { articleId, userId, wpSiteId, lockToken } = job.data
     this.logger.log(`WP publish job started: article=${articleId} site=${wpSiteId}`)
 
+    // Lock was acquired by the service before enqueue to prevent double-enqueue.
+    // We do NOT acquire again here — that would conflict with the service-held lock.
+    // We always release in finally (Lua check protects against ghost release).
     const lockKey = REDIS_KEYS.PUBLISH_LOCK(articleId)
-    const acquired = await this.redis.acquireLock(lockKey, LOCK_TTL_SECONDS)
-
-    if (!acquired) {
-      this.logger.warn(`Duplicate publish skipped for article ${articleId}`)
-      throw new Error('Publish already in progress for this article')
-    }
 
     try {
       // 10% — load data
@@ -64,6 +64,10 @@ export class WpPublishProcessor {
       if (article.userId !== userId) throw new Error('Article access denied')
       if (!site) throw new Error(`WP site ${wpSiteId} not found`)
       if (site.userId !== userId) throw new Error('WP site access denied')
+
+      // Re-validate SSRF at publish time — site.url may have been modified in DB
+      // after the initial add-site validation (e.g. DNS rebinding window)
+      validateWpUrl(site.url)
 
       if (!article.seoScore || article.seoScore < MIN_SEO_SCORE_FOR_PUBLISH) {
         throw new Error(
@@ -86,11 +90,22 @@ export class WpPublishProcessor {
         throw new Error('Failed to decrypt WP credentials. Please remove and re-add this WordPress site.')
       }
 
-      // 50% — prepare content (content already sanitized at export time via buildExportHtml)
+      // 50% — prepare content
+      // Always sanitize before sending to WP — do not assume the article went through
+      // the HTML export step which is the only other path that calls sanitize.
       this.sseService.emitProgress(articleId, userId, 50, 'Đang chuẩn bị nội dung...')
       await job.progress(50)
 
-      const content = article.contentHtml || article.content || ''
+      const rawContent = article.contentHtml || article.content || ''
+      const content = sanitizeHtml(rawContent, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'figure', 'figcaption', 'img']),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          'img': ['src', 'alt', 'title', 'width', 'height'],
+          '*': ['class', 'id'],
+        },
+        allowedSchemes: ['http', 'https', 'mailto'],
+      })
       const slug = article.slug || article.targetKeyword.toLowerCase().replace(/\s+/g, '-')
 
       // 70% — publish to WP
@@ -190,7 +205,7 @@ export class WpPublishProcessor {
       this.sseService.emitFailed(articleId, userId, msg)
       throw error
     } finally {
-      await this.redis.releaseLock(lockKey)
+      await this.redis.releaseLock(lockKey, lockToken)
     }
   }
 }

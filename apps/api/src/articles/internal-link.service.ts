@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { ArticleStatus } from '@prisma/client'
 
@@ -32,7 +32,7 @@ function jaccardSimilarity(a: string, b: string): number {
     if (setB.has(token)) intersection++
   }
 
-  const union = new Set([...setA, ...setB]).size
+  const union = setA.size + setB.size - intersection  // O(1), no allocation
   if (union === 0) return 0
   return intersection / union
 }
@@ -54,13 +54,15 @@ export class InternalLinkService {
     userId: string,
     topN = 5,
   ): Promise<InternalLinkSuggestion[]> {
-    // Load source article to get its keyword and projectId
+    // Load source article — validate ownership before leaking any data
     const source = await this.prisma.article.findUnique({
       where: { id: articleId },
-      select: { id: true, targetKeyword: true, projectId: true, title: true },
+      select: { id: true, targetKeyword: true, projectId: true, title: true, userId: true },
     })
 
     if (!source) return []
+    // Ownership check: prevent cross-user data leak of targetKeyword / title
+    if (source.userId !== userId) throw new ForbiddenException('Access denied')
 
     // Build query: same project (if any) OR same user, exclude self
     const candidates = await this.prisma.article.findMany({
