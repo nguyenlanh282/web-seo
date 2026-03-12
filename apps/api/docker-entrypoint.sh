@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 # docker-compose depends_on with healthcheck ensures PostgreSQL is ready

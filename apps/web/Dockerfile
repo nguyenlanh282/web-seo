@@ -42,6 +42,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Non-root user for container security
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+
 # Next.js standalone output preserves the monorepo directory tree inside it,
 # so server.js lives at apps/web/server.js within the standalone bundle.
 COPY --from=builder /repo/apps/web/.next/standalone ./
@@ -49,6 +52,12 @@ COPY --from=builder /repo/apps/web/.next/static ./apps/web/.next/static
 
 # Copy public folder (images, favicons, robots.txt, etc.)
 COPY --from=builder /repo/apps/web/public ./apps/web/public
+
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget -qO- http://localhost:3000 -S 2>&1 | grep -q "200\|301\|302" || exit 1
 
 EXPOSE 3000
 WORKDIR /app/apps/web
