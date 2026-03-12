@@ -29,11 +29,25 @@ const config: Config = {
           600: '#7c3aed',
           700: '#6d28d9',
         },
+        // Neubrutalism palette
+        nb: {
+          primary: '#2196F3',
+          yellow: '#FFEB3B',
+          red: '#FF5252',
+          cta: '#F59E0B',
+          bg: '#FFFEF0',
+          text: '#0D0D0D',
+          green: '#00C853',
+          purple: '#AA00FF',
+          pink: '#FF4081',
+        },
       },
       fontFamily: {
         sans: ['DM Sans', 'system-ui', 'sans-serif'],
         heading: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        'nb-heading': ['Fira Code', 'monospace'],
+        'nb-body': ['Fira Sans', 'sans-serif'],
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',

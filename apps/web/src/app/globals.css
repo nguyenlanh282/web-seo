@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap&subset=latin-ext,vietnamese');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese');
 
 @tailwind base;
 @tailwind components;
@@ -52,4 +52,68 @@
   .badge-error { @apply bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full; }
   .badge-info { @apply bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full; }
   .badge-ai { @apply bg-violet-100 text-violet-700 text-xs font-medium px-2 py-0.5 rounded-full; }
+
+  /* ── Neubrutalism Design System ── */
+  .nb-card {
+    @apply bg-white rounded-lg border-[3px] border-black;
+    box-shadow: 5px 5px 0px #000;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .nb-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0px #000;
+  }
+  .nb-card-static {
+    @apply bg-white rounded-lg border-[3px] border-black;
+    box-shadow: 5px 5px 0px #000;
+  }
+  .nb-btn {
+    @apply font-bold rounded-lg border-[3px] border-black cursor-pointer;
+    box-shadow: 4px 4px 0px #000;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .nb-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0px #000;
+  }
+  .nb-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+  .nb-input {
+    @apply rounded-lg border-[3px] border-black bg-white font-sans outline-none;
+    box-shadow: 3px 3px 0px #000;
+    transition: box-shadow 150ms ease;
+  }
+  .nb-input:focus {
+    box-shadow: 5px 5px 0px #2196F3;
+    border-color: #2196F3;
+  }
+  .nb-badge {
+    @apply inline-flex items-center font-bold text-xs px-2.5 py-1 rounded border-[2px] border-black;
+    box-shadow: 2px 2px 0px #000;
+  }
+}
+
+/* Neubrutalism font vars */
+:root {
+  --nb-font-heading: 'Fira Code', monospace;
+  --nb-font-body: 'Fira Sans', sans-serif;
+  --nb-color-primary: #2196F3;
+  --nb-color-yellow: #FFEB3B;
+  --nb-color-red: #FF5252;
+  --nb-color-cta: #F59E0B;
+  --nb-color-bg: #FFFEF0;
+  --nb-color-text: #0D0D0D;
+  --nb-border: 3px solid #000;
+  --nb-shadow: 5px 5px 0px #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-card, .nb-btn, .nb-input {
+    transition: none !important;
+  }
+  .nb-card:hover, .nb-btn:hover {
+    transform: none !important;
+  }
 }
