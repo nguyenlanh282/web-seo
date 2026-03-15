@@ -5,9 +5,6 @@ import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { usersApi } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
-import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { AlertTriangle, ArrowUpRight, FileText, FolderOpen, Sparkles } from 'lucide-react'
 
@@ -16,7 +13,6 @@ import { AlertTriangle, ArrowUpRight, FileText, FolderOpen, Sparkles } from 'luc
 // ============================================================================
 
 export function CreditCounter() {
-  const { user } = useAuth()
   const { data: stats } = useQuery({
     queryKey: ['user-stats'],
     queryFn: () => usersApi.stats(),
@@ -34,26 +30,28 @@ export function CreditCounter() {
   return (
     <div className="px-3 py-2">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
+        <span className="text-[10px] uppercase font-semibold text-[#0D0D0D]/50 tracking-wider">
           Bài viết tháng này
         </span>
-        <span className={`text-xs font-bold ${
-          isExhausted ? 'text-red-500' : isLow ? 'text-amber-500' : 'text-slate-700'
-        }`}>
+        <span
+          className={`text-xs font-bold ${
+            isExhausted ? 'text-nb-red' : isLow ? 'text-nb-cta' : 'text-[#0D0D0D]'
+          }`}
+          style={{ fontFamily: 'var(--nb-font-heading)' }}
+        >
           {used}/{limit}
         </span>
       </div>
-      <Progress
-        value={percent}
-        className="h-1.5"
-        indicatorClassName={
-          isExhausted ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-blue-500'
-        }
-      />
+      <div className="h-2 bg-black/20 rounded-full border border-black overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${isExhausted ? 'bg-nb-red' : 'bg-nb-primary'}`}
+          style={{ width: `${Math.min(100, percent)}%` }}
+        />
+      </div>
       {isExhausted && (
         <Link
           href="/pricing"
-          className="flex items-center gap-1 mt-1.5 text-[10px] text-red-500 hover:text-red-600 font-medium"
+          className="flex items-center gap-1 mt-1.5 text-[10px] text-nb-red font-bold"
         >
           <Sparkles className="h-3 w-3" />
           Nâng cấp để tạo thêm
@@ -98,13 +96,11 @@ export function PlanLimitBanner({ type, className = '' }: PlanLimitBannerProps) 
   return (
     <>
       <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
-          isExhausted
-            ? 'bg-red-50 border-red-200 text-red-700'
-            : 'bg-amber-50 border-amber-200 text-amber-700'
+        className={`nb-card-static px-4 py-3 flex items-center gap-3 ${
+          isExhausted ? 'bg-nb-red' : 'bg-nb-yellow'
         } ${className}`}
       >
-        <div className={`p-1.5 rounded-md ${isExhausted ? 'bg-red-100' : 'bg-amber-100'}`}>
+        <div className="rounded-lg border-[2px] border-black p-1.5 bg-white/30">
           {isExhausted ? (
             <AlertTriangle className="h-4 w-4" />
           ) : (
@@ -112,26 +108,28 @@ export function PlanLimitBanner({ type, className = '' }: PlanLimitBannerProps) 
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">
+          <p className={`text-sm font-bold ${isExhausted ? 'text-white' : 'text-[#0D0D0D]'}`}>
             {isExhausted
               ? `Đã hết ${isArticle ? 'lượt tạo bài viết' : 'số dự án'} tháng này`
               : `Còn ${remaining} ${isArticle ? 'bài viết' : 'dự án'} (${used}/${limit})`}
           </p>
-          <p className="text-xs opacity-80 mt-0.5">
+          <p className={`text-xs mt-0.5 ${isExhausted ? 'text-white/80' : 'text-[#0D0D0D]/70'}`}>
             {isExhausted
               ? 'Nâng cấp gói để tiếp tục sử dụng.'
               : `Bạn đang dùng ${percent}% giới hạn gói ${user?.plan || 'Starter'}.`}
           </p>
         </div>
-        <Button
-          size="sm"
-          variant={isExhausted ? 'default' : 'outline'}
-          className={isExhausted ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
+        <button
+          className={`nb-btn px-3 py-1.5 text-xs flex items-center gap-1 ${
+            isExhausted
+              ? 'bg-white text-[#0D0D0D]'
+              : 'bg-[#0D0D0D] text-white'
+          }`}
           onClick={() => setShowUpgrade(true)}
         >
-          <Sparkles className="h-3 w-3 mr-1" />
+          <Sparkles className="h-3 w-3" />
           Nâng cấp
-        </Button>
+        </button>
       </div>
 
       <UpgradeModal
