@@ -1,5 +1,4 @@
 import { IsString, IsOptional, MaxLength, IsNumber, Min, Max } from 'class-validator'
-import { ApiProperty } from '@nestjs/swagger'
 
 export class UpdateArticleDto {
   @IsOptional()

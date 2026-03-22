@@ -109,8 +109,7 @@ Yêu cầu:
       let outlineData: any
       try {
         outlineData = JSON.parse(jsonMatch[0])
-      } catch (e) {
-        this.logger.warn('Failed to parse AI response, using empty outline')
+      } catch (_e) {
         outlineData = { sections: [], contentGaps: [] }
       }
 

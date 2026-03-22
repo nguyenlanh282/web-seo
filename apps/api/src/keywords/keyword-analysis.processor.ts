@@ -71,8 +71,7 @@ Hãy phân tích và trả về JSON với cấu trúc:
         if (jsonMatch) {
           aiAnalysis = JSON.parse(jsonMatch[0])
         }
-      } catch (e) {
-        this.logger.warn('AI analysis failed, using SERP data only')
+      } catch (_e) {
       }
 
       this.sseService.emitProgress(articleId, userId, 80, 'Đang lưu kết quả...')

@@ -2,7 +2,6 @@ import { Process, Processor } from '@nestjs/bull'
 import { Job } from 'bull'
 import { Logger } from '@nestjs/common'
 import axios from 'axios'
-import * as sanitizeHtml from 'sanitize-html'
 import { PrismaService } from '../prisma/prisma.service'
 import { RedisService } from '../redis/redis.service'
 import { SseService } from '../jobs/sse.service'
@@ -10,24 +9,12 @@ import { ArticleStatus, ExportType, ExportStatus } from '@prisma/client'
 import { QUEUE_NAMES, REDIS_KEYS, MIN_SEO_SCORE_FOR_PUBLISH } from '@seopen/shared'
 import { decrypt } from '../common/utils/crypto'
 import { validateWpUrl } from '../common/utils/ssrf'
-
-/** Thrown after a PARTIAL record has been written — outer catch must not write FAILED */
-class WpPartialError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'WpPartialError'
-  }
-}
-
-export interface WpPublishJobData {
-  articleId: string
-  userId: string
-  wpSiteId: string
-  lockToken: string  // acquired by service before enqueue; worker releases in finally
-}
+import { WpPublishJobData, WpPartialError } from './wp-publish-job.types'
+import { sanitizeWpContent } from './wp-content-sanitizer'
 
 // Lock TTL must exceed job timeout + processing buffer to prevent ghost re-enqueue
-const LOCK_TTL_SECONDS = 150  // job timeout = 120s, +30s buffer
+// Value is 150s (job timeout = 120s + 30s buffer) — set on the Redis key by the service.
+const LOCK_TTL_SECONDS = 150 as const
 
 @Processor(QUEUE_NAMES.WORDPRESS_PUBLISH)
 export class WpPublishProcessor {
@@ -44,13 +31,10 @@ export class WpPublishProcessor {
     const { articleId, userId, wpSiteId, lockToken } = job.data
     this.logger.log(`WP publish job started: article=${articleId} site=${wpSiteId}`)
 
-    // Lock was acquired by the service before enqueue to prevent double-enqueue.
-    // We do NOT acquire again here — that would conflict with the service-held lock.
-    // We always release in finally (Lua check protects against ghost release).
     const lockKey = REDIS_KEYS.PUBLISH_LOCK(articleId)
 
     try {
-      // 10% — load data
+      // 10% — load & validate
       this.sseService.emitProgress(articleId, userId, 10, 'Đang tải bài viết...')
       await job.progress(10)
 
@@ -59,14 +43,12 @@ export class WpPublishProcessor {
         this.prisma.wpSite.findUnique({ where: { id: wpSiteId } }),
       ])
 
-      // Ownership checks for both article and site
       if (!article) throw new Error(`Article ${articleId} not found`)
       if (article.userId !== userId) throw new Error('Article access denied')
       if (!site) throw new Error(`WP site ${wpSiteId} not found`)
       if (site.userId !== userId) throw new Error('WP site access denied')
 
-      // Re-validate SSRF at publish time — site.url may have been modified in DB
-      // after the initial add-site validation (e.g. DNS rebinding window)
+      // Re-validate SSRF at publish time — prevents DNS rebinding attacks
       validateWpUrl(site.url)
 
       if (!article.seoScore || article.seoScore < MIN_SEO_SCORE_FOR_PUBLISH) {
@@ -79,7 +61,6 @@ export class WpPublishProcessor {
       this.sseService.emitProgress(articleId, userId, 30, 'Đang kết nối WordPress...')
       await job.progress(30)
 
-      // passwordEnc format: "encrypted:iv:authTag"
       const [enc, iv, authTag] = site.passwordEnc.split(':')
       if (!enc || !iv || !authTag) throw new Error('Invalid WP credentials format. Please re-add this site.')
 
@@ -90,25 +71,14 @@ export class WpPublishProcessor {
         throw new Error('Failed to decrypt WP credentials. Please remove and re-add this WordPress site.')
       }
 
-      // 50% — prepare content
-      // Always sanitize before sending to WP — do not assume the article went through
-      // the HTML export step which is the only other path that calls sanitize.
+      // 50% — sanitize content
       this.sseService.emitProgress(articleId, userId, 50, 'Đang chuẩn bị nội dung...')
       await job.progress(50)
 
-      const rawContent = article.contentHtml || article.content || ''
-      const content = sanitizeHtml(rawContent, {
-        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['h1', 'h2', 'figure', 'figcaption', 'img']),
-        allowedAttributes: {
-          ...sanitizeHtml.defaults.allowedAttributes,
-          'img': ['src', 'alt', 'title', 'width', 'height'],
-          '*': ['class', 'id'],
-        },
-        allowedSchemes: ['http', 'https', 'mailto'],
-      })
+      const content = sanitizeWpContent(article.contentHtml || article.content || '')
       const slug = article.slug || article.targetKeyword.toLowerCase().replace(/\s+/g, '-')
 
-      // 70% — publish to WP
+      // 70% — POST to WordPress REST API
       this.sseService.emitProgress(articleId, userId, 70, 'Đang đăng bài lên WordPress...')
       await job.progress(70)
 
@@ -123,13 +93,7 @@ export class WpPublishProcessor {
           slug,
           meta: { _yoast_wpseo_metadesc: article.metaDescription || '' },
         },
-        {
-          headers: {
-            Authorization: `Basic ${auth}`,
-            'Content-Type': 'application/json',
-          },
-          timeout: 90000,
-        },
+        { headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' }, timeout: 90000 },
       )
 
       const wpPostId: number = response.data.id
@@ -143,26 +107,13 @@ export class WpPublishProcessor {
         await this.prisma.$transaction([
           this.prisma.article.update({
             where: { id: articleId },
-            data: {
-              status: ArticleStatus.PUBLISHED,
-              wpPostId,
-              wpPostUrl,
-              wpSiteId,
-              publishedAt: new Date(),
-            },
+            data: { status: ArticleStatus.PUBLISHED, wpPostId, wpPostUrl, wpSiteId, publishedAt: new Date() },
           }),
           this.prisma.exportHistory.create({
-            data: {
-              articleId,
-              type: ExportType.WORDPRESS,
-              status: ExportStatus.SUCCESS,
-              wpPostId: String(wpPostId),
-              wpPostUrl,
-            },
+            data: { articleId, type: ExportType.WORDPRESS, status: ExportStatus.SUCCESS, wpPostId: String(wpPostId), wpPostUrl },
           }),
         ])
       } catch (dbError: unknown) {
-        // WP post exists but our DB is out of sync — record PARTIAL so user can retry
         const dbMsg = dbError instanceof Error ? dbError.message : 'DB sync failed'
         this.logger.error(`DB sync failed after WP publish (postId=${wpPostId}): ${dbMsg}`)
         await this.prisma.exportHistory.create({
@@ -174,38 +125,34 @@ export class WpPublishProcessor {
             wpPostUrl,
             errorMsg: `WP post created (id=${wpPostId}) but DB sync failed: ${dbMsg.slice(0, 400)}`,
           },
-        }).catch(() => undefined) // best-effort
-        // Use WpPartialError so the outer catch does NOT write a duplicate FAILED record
-        throw new WpPartialError(
-          `WP post created (id=${wpPostId}) but DB sync failed. Use retry-publish to sync.`,
-        )
+        }).catch(() => undefined)
+        throw new WpPartialError(`WP post created (id=${wpPostId}) but DB sync failed. Use retry-publish to sync.`)
       }
 
       await job.progress(100)
       this.sseService.emitCompleted(articleId, userId, { wpPostId, wpPostUrl })
-
       this.logger.log(`✅ WP publish completed: article=${articleId} postId=${wpPostId}`)
       return { wpPostId, wpPostUrl }
+
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Unknown error'
       this.logger.error(`❌ WP publish failed: article=${articleId} — ${msg}`)
 
-      // PARTIAL errors already wrote their own record — do not double-write FAILED
       if (!(error instanceof WpPartialError)) {
         await this.prisma.exportHistory.create({
-          data: {
-            articleId,
-            type: ExportType.WORDPRESS,
-            status: ExportStatus.FAILED,
-            errorMsg: msg.slice(0, 500),
-          },
-        }).catch(() => undefined) // non-blocking
+          data: { articleId, type: ExportType.WORDPRESS, status: ExportStatus.FAILED, errorMsg: msg.slice(0, 500) },
+        }).catch(() => undefined)
       }
 
       this.sseService.emitFailed(articleId, userId, msg)
       throw error
+
     } finally {
       await this.redis.releaseLock(lockKey, lockToken)
     }
   }
 }
+
+// Re-export job types so consumers import from one place
+export type { WpPublishJobData } from './wp-publish-job.types'
+export { LOCK_TTL_SECONDS }

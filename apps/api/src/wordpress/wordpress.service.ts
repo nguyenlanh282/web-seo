@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common'
 import axios from 'axios'
 import { PrismaService } from '../prisma/prisma.service'
 import { encrypt, decrypt } from '../common/utils/crypto'

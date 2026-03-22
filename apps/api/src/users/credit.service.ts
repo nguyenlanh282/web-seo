@@ -1,5 +1,5 @@
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common'
-import { Cron, CronExpression } from '@nestjs/schedule'
+import { Cron } from '@nestjs/schedule'
 import { PrismaService } from '../prisma/prisma.service'
 import { RedisService } from '../redis/redis.service'
 import { PLAN_LIMITS } from '@seopen/shared'
