@@ -21,6 +21,9 @@ FROM base AS prod-deps
 COPY package*.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY apps/api/package*.json ./apps/api/
+# Ensure workspace dirs exist — npm may not create them if all packages hoist
+# to root node_modules, which would cause the COPY in runner stage to fail.
+RUN mkdir -p apps/api/node_modules
 RUN npm ci --omit=dev
 
 # ── Stage 4: build ───────────────────────────────────────────────────────────
