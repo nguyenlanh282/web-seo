@@ -37,6 +37,10 @@ jobs:
       - name: Build @seopen/shared
         run: npm run build --workspace=packages/shared
 
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        working-directory: apps/api
+
       - name: Typecheck — API
         run: npm run typecheck --workspace=apps/api
 
