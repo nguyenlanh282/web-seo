@@ -5,12 +5,20 @@
 # Traefik (managed by Dokploy) routes all traffic → port 3000
 # API port 4000 is internal — accessed via Next.js rewrites (/api/v1/*)
 #
+# Data persistence (bind mounts on VPS):
+#   Postgres → /opt/seopen/data/postgres
+#   Redis    → /opt/seopen/data/redis
+#
 # Setup in Dokploy UI:
 #   1. Create new "Docker Compose" application
 #   2. Set Compose file → docker-compose.dokploy.yml
 #   3. Set domain → your-domain.com → port 3000
 #   4. Paste all env vars from .env.example → Environment tab
 #   5. Deploy
+#
+# First deploy on VPS (run once):
+#   mkdir -p /opt/seopen/data/postgres /opt/seopen/data/redis
+#   chmod 700 /opt/seopen/data/postgres /opt/seopen/data/redis
 # =============================================================================
 
 services:
@@ -25,7 +33,7 @@ services:
       POSTGRES_USER: seopen
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /opt/seopen/data/postgres:/var/lib/postgresql/data
     networks:
       - seopen_net
     healthcheck:
@@ -40,7 +48,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
-      - redis_data:/data
+      - /opt/seopen/data/redis:/data
     networks:
       - seopen_net
     healthcheck:
@@ -123,7 +131,3 @@ services:
 networks:
   seopen_net:
     driver: bridge
-
-volumes:
-  postgres_data:
-  redis_data:
