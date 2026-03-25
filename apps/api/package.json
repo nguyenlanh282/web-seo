@@ -6,8 +6,8 @@
     "dev": "nest start --watch",
     "start": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
-    "test": "jest",
-    "test:cov": "jest --coverage",
+    "test": "jest --passWithNoTests",
+    "test:cov": "jest --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "db:seed": "ts-node prisma/seed.ts"
   },
