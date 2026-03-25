@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { articlesApi, wordpressApi, jobsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -269,9 +270,9 @@ export default function ExportTab({
           ) : sites.length === 0 ? (
             <p className="text-sm text-slate-500">
               Chưa kết nối WordPress site nào.{' '}
-              <a href="/wordpress" className="text-blue-600 hover:underline">
+              <Link href="/wordpress" className="text-blue-600 hover:underline">
                 Thêm site tại đây →
-              </a>
+              </Link>
             </p>
           ) : (
             <>
