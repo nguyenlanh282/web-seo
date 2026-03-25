@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
-import { ChecklistType } from '@prisma/client'
+import { ChecklistType, Prisma } from '@prisma/client'
 
 // ── Check modules ────────────────────────────────────────────────────────────
 import { checkHeadlineKeyword, checkMetaDescription } from './seo-title-meta-checks'
@@ -62,8 +62,8 @@ export class SeoService {
     for (const check of checks) {
       await this.prisma.seoChecklist.upsert({
         where: { articleId_type: { articleId, type: check.type } },
-        create: { articleId, type: check.type, passed: check.passed, score: check.score, maxScore: check.maxScore, details: check.details, suggestions: check.suggestions },
-        update: { passed: check.passed, score: check.score, maxScore: check.maxScore, details: check.details, suggestions: check.suggestions },
+        create: { articleId, type: check.type, passed: check.passed, score: check.score, maxScore: check.maxScore, details: check.details as Prisma.InputJsonValue, suggestions: check.suggestions as string[] },
+        update: { passed: check.passed, score: check.score, maxScore: check.maxScore, details: check.details as Prisma.InputJsonValue, suggestions: check.suggestions as string[] },
       })
       earned += check.score
       totalPossible += check.maxScore
