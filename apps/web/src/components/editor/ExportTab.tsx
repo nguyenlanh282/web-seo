@@ -297,7 +297,7 @@ export default function ExportTab({
                   <div className="flex-1">
                     <p className="font-medium">Bài viết đã được đăng nhưng chưa lưu được URL</p>
                     <p className="text-xs mt-0.5 opacity-80">
-                      Job publish trước đó bị gián đoạn. Chọn site và nhấn "Thử lại publish" để đồng bộ lại.
+                      Job publish trước đó bị gián đoạn. Chọn site và nhấn &quot;Thử lại publish&quot; để đồng bộ lại.
                     </p>
                   </div>
                   <Button

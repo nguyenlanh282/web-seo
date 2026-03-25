@@ -22,6 +22,12 @@ export function PlanErrorProvider({ children }: { children: React.ReactNode }) {
   // Track active rate-limit countdowns so we can update their toasts
   const countdownsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map())
 
+  // Keep a ref for user?.plan so the effect doesn't need to re-subscribe on plan changes
+  const userPlanRef = useRef(user?.plan)
+  useEffect(() => {
+    userPlanRef.current = user?.plan
+  }, [user?.plan])
+
   const startCountdown = useCallback((toastId: string | number, seconds: number) => {
     // Clear any existing interval for this toast
     const existing = countdownsRef.current.get(String(toastId))
@@ -46,6 +52,8 @@ export function PlanErrorProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
+    // Capture ref value for cleanup — avoids exhaustive-deps warning
+    const countdowns = countdownsRef.current
     const unsubscribe = onPlanError((error) => {
       if (error.code === 'RATE_LIMIT_EXCEEDED') {
         const retryAfter = error.retryAfter ?? 60
@@ -64,8 +72,8 @@ export function PlanErrorProvider({ children }: { children: React.ReactNode }) {
         error.code === 'WP_SITE_LIMIT_REACHED' ||
         error.code === 'WP_PUBLISH_NOT_ALLOWED'
       ) {
-        track('plan_limit_hit', { code: error.code, plan: user?.plan ?? 'UNKNOWN' })
-        track('upgrade_modal_opened', { reason: error.message, currentPlan: user?.plan })
+        track('plan_limit_hit', { code: error.code, plan: userPlanRef.current ?? 'UNKNOWN' })
+        track('upgrade_modal_opened', { reason: error.message, currentPlan: userPlanRef.current })
         setUpgradeReason(error.message)
         setUpgradeOpen(true)
       } else {
@@ -76,8 +84,8 @@ export function PlanErrorProvider({ children }: { children: React.ReactNode }) {
     return () => {
       unsubscribe()
       // Clear all running countdown intervals on unmount
-      countdownsRef.current.forEach((interval) => clearInterval(interval))
-      countdownsRef.current.clear()
+      countdowns.forEach((interval) => clearInterval(interval))
+      countdowns.clear()
     }
   }, [startCountdown])
 
