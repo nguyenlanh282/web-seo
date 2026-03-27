@@ -1,5 +1,5 @@
 # Phase 05 - Export & WordPress 1-Click Publish
-> Weeks 8-9 | Priority: P0 | Status: Pending
+> Weeks 8-9 | Priority: P0 | Status: ✅ Done (2026-03-27)
 
 ## Context Links
 - Previous phase: [phase-04-seo-checker.md](./phase-04-seo-checker.md)

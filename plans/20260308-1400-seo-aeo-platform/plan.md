@@ -1,6 +1,6 @@
 # Vietnamese SEO/AEO SaaS Platform — Master Plan
 
-> **Created**: 2026-03-08 14:00 | **Updated**: 2026-03-10 | **Version**: 1.1
+> **Created**: 2026-03-08 14:00 | **Updated**: 2026-03-27 | **Version**: 2.0
 
 ## Project Summary
 
@@ -33,8 +33,10 @@ content studios, and freelance bloggers.
 | 2 | AI Engine — BullMQ, SSE, SerpAPI, Step 1 Keyword Analysis | 3-4 | ✅ Done | [phase-02-ai-engine-step1.md](./phase-02-ai-engine-step1.md) |
 | 3 | Editor — TipTap, Outline + Content Writer (Steps 2 & 3) | 5-6 | ✅ Done | [phase-03-editor-steps-2-3.md](./phase-03-editor-steps-2-3.md) |
 | 4 | SEO Checker — 12-Item Checklist + Readability (Step 4) | 7 | ✅ Done | [phase-04-seo-checker.md](./phase-04-seo-checker.md) |
-| 5 | Export & WordPress — HTML Export + 1-Click Publish (Step 5) | 8-9 | 🔄 In Progress (~90%) | [phase-05-export-wordpress.md](./phase-05-export-wordpress.md) |
-| 6 | Hardening — Publish Pipeline, Plan Enforcement, Rate Limiting | 10 | 🔄 In Progress (~70%) | [phase-06-publish-enforcement.md](./phase-06-publish-enforcement.md) |
+| 5 | Export & WordPress — HTML Export + 1-Click Publish (Step 5) | 8-9 | ✅ Done | [phase-05-export-wordpress.md](./phase-05-export-wordpress.md) |
+| 6 | Hardening — Publish Pipeline, Plan Enforcement, Rate Limiting | 10 | ✅ Done | [phase-06-publish-enforcement.md](./phase-06-publish-enforcement.md) |
+| 7 | DevOps — CI/CD, Docker, Dokploy, GitHub Secrets | — | ✅ Done | — |
+| 8 | Launch Readiness — E2E Test, Monitoring, Performance | 11 | 📋 Planned | [phase-08-launch.md](./phase-08-launch.md) |
 
 ## Article State Machine
 
@@ -53,12 +55,14 @@ DRAFT → KEYWORD_ANALYZED → OUTLINED → CONTENT_WRITTEN → SEO_CHECKED → 
 ## Timeline Overview
 
 ```
-Week 1-2  ██████  Phase 1 — Foundation
-Week 3-4  ██████  Phase 2 — AI Engine + Step 1
-Week 5-6  ██████  Phase 3 — Editor + Steps 2 & 3
-Week 7    ███     Phase 4 — SEO Checker
-Week 8-9  ██████  Phase 5 — Export & WordPress
-Week 10   ███     Phase 6 — Hardening & Launch
+Week 1-2  ██████  Phase 1 — Foundation                    ✅
+Week 3-4  ██████  Phase 2 — AI Engine + Step 1            ✅
+Week 5-6  ██████  Phase 3 — Editor + Steps 2 & 3          ✅
+Week 7    ███     Phase 4 — SEO Checker                   ✅
+Week 8-9  ██████  Phase 5 — Export & WordPress             ✅
+Week 10   ███     Phase 6 — Hardening & Launch             ✅
+          ███     Phase 7 — DevOps (CI/CD, Docker, Dokploy)✅
+Week 11   ███     Phase 8 — Launch Readiness               📋
 ```
 
 ## Key External Dependencies
