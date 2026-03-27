@@ -30,6 +30,9 @@ COPY package*.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY apps/api/package*.json        ./apps/api/
 COPY apps/web/package*.json        ./apps/web/
+# Ensure workspace dirs exist — npm may hoist all packages to root node_modules,
+# leaving these empty. The runner stage COPY would fail without them.
+RUN mkdir -p apps/api/node_modules apps/web/node_modules
 RUN npm ci --omit=dev
 
 # ── Stage 4: build everything ─────────────────────────────────────────────────
@@ -55,6 +58,7 @@ ARG NEXT_PUBLIC_SENTRY_DSN
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
+RUN mkdir -p apps/web/public
 RUN npm run build --workspace=apps/web
 
 # ── Stage 5: production runner ────────────────────────────────────────────────
