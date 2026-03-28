@@ -121,6 +121,7 @@ services:
         condition: service_healthy
     networks:
       - seopen_net
+      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000 -S 2>&1 | grep -q '200\\|301\\|302' || exit 1"]
       interval: 30s
@@ -131,3 +132,5 @@ services:
 networks:
   seopen_net:
     driver: bridge
+  dokploy-network:
+    external: true
