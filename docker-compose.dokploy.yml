@@ -70,6 +70,18 @@ services:
         NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY:-}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      # HTTPS router
+      - "traefik.http.routers.seopen-app.rule=Host(`seopen.enzara.com.vn`)"
+      - "traefik.http.routers.seopen-app.entrypoints=websecure"
+      - "traefik.http.routers.seopen-app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seopen-app.loadbalancer.server.port=3000"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.seopen-http.rule=Host(`seopen.enzara.com.vn`)"
+      - "traefik.http.routers.seopen-http.entrypoints=web"
+      - "traefik.http.routers.seopen-http.middlewares=seopen-redirect-https"
+      - "traefik.http.middlewares.seopen-redirect-https.redirectscheme.scheme=https"
     environment:
       NODE_ENV: production
 
