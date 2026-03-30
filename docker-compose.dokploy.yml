@@ -72,6 +72,21 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    labels:
+      - "traefik.enable=true"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.seopen-web.rule=Host(`seopen.enzara.com.vn`)"
+      - "traefik.http.routers.seopen-web.entrypoints=web"
+      - "traefik.http.routers.seopen-web.middlewares=seopen-redirect"
+      - "traefik.http.middlewares.seopen-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.seopen-redirect.redirectscheme.permanent=true"
+      # HTTPS router
+      - "traefik.http.routers.seopen-secure.rule=Host(`seopen.enzara.com.vn`)"
+      - "traefik.http.routers.seopen-secure.entrypoints=websecure"
+      - "traefik.http.routers.seopen-secure.tls.certresolver=letsencrypt"
+      # Service port
+      - "traefik.http.services.seopen-service.loadbalancer.server.port=3000"
+      - "traefik.docker.network=dokploy-network"
     environment:
       NODE_ENV: production
 
